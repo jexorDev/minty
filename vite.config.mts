@@ -13,6 +13,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  //base: "/mintyclient/",
   plugins: [
     VueRouter({
       dts: 'src/typed-router.d.ts',
@@ -69,7 +70,7 @@ export default defineConfig({
     ],
   },
   server: {
-    port: 3000,
+    port: 3000,    
   },
   css: {
     preprocessorOptions: {

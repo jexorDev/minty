@@ -19,11 +19,14 @@ export default abstract class BaseService<T> {
         return {} as T;
     }
 
-    getMultiple(filter: string): T[] {
+    async getMultiple(filter: string): Promise<T[]> {
         const fullUrl = this.url + (filter == "" ? "" : `?${filter}`);
-        axios.get(fullUrl).then((res) => {
-            return (res.data as T[]);
-        });
-        return [];
+        const res = await axios.get(fullUrl);
+        return (res.data as T[]);
+    }
+
+    async post(data: T): Promise<T> {
+        const res = await axios.post(this.url, data);
+        return res.data as T;
     }
 }

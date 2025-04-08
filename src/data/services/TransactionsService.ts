@@ -1,7 +1,7 @@
-import type Transaction from "../interfaces/Transaction";
+import type Transaction from "../interfaces/Transactions/Transaction";
 import BaseService from "./BaseService";
 
-class TransactionsService extends BaseService<Transaction> {
+export default class TransactionsService extends BaseService<Transaction> {
     constructor() {
         super("transactions");
     }

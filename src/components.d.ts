@@ -9,7 +9,9 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppFooter: typeof import('./components/AppFooter.vue')['default']
     Dashboard: typeof import('./components/Dashboard.vue')['default']
+    DialogBase: typeof import('./components/DialogBase.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    TransactionAddForm: typeof import('./components/TransactionAddForm.vue')['default']
   }
 }

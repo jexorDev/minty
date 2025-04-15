@@ -1,8 +1,9 @@
 <template>
     <v-dialog
-          v-model="props.show"
+          v-model="show"
           transition="dialog-bottom-transition"
           fullscreen
+          :loading="loading"
         >
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
@@ -17,33 +18,46 @@
             <v-toolbar>
               <v-btn
                 icon="mdi-close"
-                @click="$emit('close')"
+                @click="$emit('cancel')"
               ></v-btn>
     
-              <v-toolbar-title>{{ props.title }}</v-toolbar-title>
+              <v-toolbar-title>{{action}}{{ modelType }}</v-toolbar-title>
     
               <v-toolbar-items>
                 <v-btn
-                  text="Save"
+                  :text="action"
                   variant="text"
-                  @click="$emit('close')"
+                  @click="$emit('save')"
                 ></v-btn>
               </v-toolbar-items>
             </v-toolbar>
             <slot></slot>
-            
+          <v-card-actions>
+            <v-btn color="primary" variant="outlined" @click="$emit('cancel')">Cancel</v-btn>
+            <v-btn color="secondary" :text="action" @click="$emit('save')"></v-btn>
+        
+          </v-card-actions>  
           </v-card>
+          
         </v-dialog>
 
 </template>
 <script setup lang="ts">
+import {inject} from 'vue';
+
+const show = inject<boolean>('show');
+const loading = inject<boolean>('loading');
 
 const props = defineProps<{
-    title: string,
-    show: boolean
+  modelType: string,
+  isNew: boolean
 }>();
+
+const action = computed(() => props.isNew ? "Add" : "Update");
+
 const emit = defineEmits<{
-    (e: 'close'): void
+    (e: 'cancel'): void
+    (e: 'save'): void
 }>();
 
 //get localShow(): boolean { return props.show; }

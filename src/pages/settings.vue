@@ -1,9 +1,9 @@
 <template>
-       <div class="d-flex flex-row">
+       <div :class="mobile ? '' : 'd-flex flex-row'">
    <v-tabs
         v-model="tab"
         color="primary"
-        direction="vertical"
+        :direction="mobile ? 'horizontal': 'vertical'"
       >
         <v-tab prepend-icon="mdi-sitemap-outline" text="Categories" value="option-1"></v-tab>
         <v-tab prepend-icon="mdi-point-of-sale" text="Merchants" value="option-2"></v-tab>
@@ -11,22 +11,15 @@
       </v-tabs>
 
       <v-tabs-window v-model="tab">
-        <v-tabs-window-item value="option-1">
-          <v-card flat>
-            <v-card-text>
-              <p>
-                Sed aliquam ultrices mauris. Donec posuere vulputate arcu. Morbi ac felis. Etiam feugiat lorem non metus. Sed a libero.
-              </p>
+        <v-tabs-window-item value="option-1">          
+          <v-expansion-panels>
+<v-expansion-panel v-for="category in categories"
+:title="category.name"
+variant="accordion"
+>
 
-              <p>
-                Nam ipsum risus, rutrum vitae, vestibulum eu, molestie vel, lacus. Aenean tellus metus, bibendum sed, posuere ac, mattis non, nunc. Aliquam lobortis. Aliquam lobortis. Suspendisse non nisl sit amet velit hendrerit rutrum.
-              </p>
-
-              <p class="mb-0">
-                Phasellus dolor. Fusce neque. Fusce fermentum odio nec arcu. Pellentesque libero tortor, tincidunt et, tincidunt eget, semper nec, quam. Phasellus blandit leo ut odio.
-              </p>
-            </v-card-text>
-          </v-card>
+</v-expansion-panel>
+</v-expansion-panels>
         </v-tabs-window-item>
 
         <v-tabs-window-item value="option-2">
@@ -72,5 +65,17 @@
     </div>
 </template>
 <script setup lang="ts">
+import type Category from '@/data/interfaces/Category';
+import CategoryService from '@/data/services/CategoryService';
+import { useDisplay } from 'vuetify'
+
+const { mobile } = useDisplay()
+
+const categories = ref<Category[]>([]);
+
+onMounted(async () => {
+  categories.value = await new CategoryService().getMultiple();
+})
+
 const tab = ref("option-1")
 </script>

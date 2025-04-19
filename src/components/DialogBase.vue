@@ -15,27 +15,19 @@
           </template>
     
           <v-card>
-            <v-toolbar>
-              <v-btn
-                icon="mdi-close"
-                @click="$emit('cancel')"
-              ></v-btn>
-    
-              <v-toolbar-title>{{action}}{{ modelType }}</v-toolbar-title>
-    
+            <v-toolbar color="secondary-darken-1" density="compact">
+              <v-toolbar-title>{{action}} {{ modelType }}</v-toolbar-title>
               <v-toolbar-items>
                 <v-btn
-                  :text="action"
-                  variant="text"
-                  @click="$emit('save')"
-                ></v-btn>
+                icon="mdi-close"                
+                @click="$emit('cancel')"                
+              ></v-btn>
               </v-toolbar-items>
             </v-toolbar>
             <slot></slot>
           <v-card-actions>
-            <v-btn color="primary" variant="outlined" @click="$emit('cancel')">Cancel</v-btn>
-            <v-btn color="secondary" :text="action" @click="$emit('save')"></v-btn>
-        
+            <v-btn color="primary" variant="tonal" @click="$emit('cancel')">Cancel</v-btn>
+            <v-btn color="primary" variant="outlined" :text="action" @click="$emit('save')"></v-btn>
           </v-card-actions>  
           </v-card>
           

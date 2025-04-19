@@ -1,7 +1,17 @@
 import type Transaction from "../interfaces/Transactions/Transaction";
+import type TransactionSplit from "../interfaces/Transactions/TransactionSplit";
 import BaseModel from "./BaseModel";
+import TransactionSplitModel from "./TransactionSplitModel";
 
 export default class TransactionModel extends BaseModel<Transaction> {
+
+    constructor(transaction?: Transaction) {
+        super(transaction);
+
+        if (this.isNew) {
+            this.transactionDate = new Date();
+        }     
+    }    
 
     get transactionDate() {
         return this.model.transactionDate;
@@ -36,5 +46,12 @@ export default class TransactionModel extends BaseModel<Transaction> {
     }
     set exclude(value) {
         this.model.exclude = value;
+    }   
+
+    get categoryId() {
+        return this.model.categoryId;
+    }
+    set categoryId(value) {
+        this.model.categoryId = value;
     }   
 }

@@ -1,6 +1,6 @@
 export default interface Transaction {
     pk?: number;
-    splitPk?: number | null;
+    splitId?: number | null;
     transactionDate: Date;
     description: string;
     amount: number;

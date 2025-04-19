@@ -11,15 +11,30 @@
       </v-tabs>
 
       <v-tabs-window v-model="tab">
-        <v-tabs-window-item value="option-1">          
-          <v-expansion-panels>
-<v-expansion-panel v-for="category in categories"
-:title="category.name"
-variant="accordion"
->
+        <v-tabs-window-item value="option-1">        
+          <v-row>
+            <v-col>
+              <v-list>
+                <v-list-item v-for="categoory in categories" @click="selectedCategory = categoory">
+                  {{ categoory.name }}
+                </v-list-item>
+              </v-list>
+                  
+              
+            </v-col>
+            <v-col>
+                
 
-</v-expansion-panel>
-</v-expansion-panels>
+              <v-card >
+                <v-card-text>
+                  <v-text-field v-model="selectedCategory?.name">                    
+                  </v-text-field>
+                  
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+          
         </v-tabs-window-item>
 
         <v-tabs-window-item value="option-2">
@@ -72,6 +87,7 @@ import { useDisplay } from 'vuetify'
 const { mobile } = useDisplay()
 
 const categories = ref<Category[]>([]);
+const selectedCategory = ref<Category | null>(null);
 
 onMounted(async () => {
   categories.value = await new CategoryService().getMultiple();

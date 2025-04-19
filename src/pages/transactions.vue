@@ -17,7 +17,7 @@
                   ></v-list-item>
                 </template>
         </v-autocomplete> -->
-        <v-card color="secondary">
+        <v-card color="secondary-darken-1">
           <v-card-text>
             <v-row>
               <v-col>
@@ -40,7 +40,7 @@
         <v-fab :app="true" @click="showAddEditDialog()" icon="mdi-plus" color="primary"></v-fab>
     </v-responsive>
 </v-container>
-    <TransactionAddForm v-model="transactionModel" @cancel="showAddTransactionDialog = false" @save="save" :show="showAddTransactionDialog"></TransactionAddForm>
+    <TransactionAddForm v-model="transactionModel" v-model:splits="transactionSplitModels" @cancel="showAddTransactionDialog = false" @save="save" :show="showAddTransactionDialog"></TransactionAddForm>
   </template>
   
   <script setup lang="ts">
@@ -50,6 +50,7 @@
   import TransactionsService from '@/data/services/TransactionsService';
   import CategoryService from '@/data/services/CategoryService'; 
 import TransactionModel from '@/data/classes/TransactionModel';
+import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
   
   
   interface AutoCompleteObject {
@@ -70,7 +71,8 @@ import TransactionModel from '@/data/classes/TransactionModel';
   const selectedYear = ref(2024);
   const years = ref<number[]>([]);
   const transactionModel = ref<TransactionModel>(new TransactionModel());
-  
+  const transactionSplitModels = ref<TransactionSplitModel[]>([]);
+
   const headers = ref([
     {title: 'Date', key: 'transactionDate'},
     {title: 'Description', key: 'description'},
@@ -113,9 +115,23 @@ import TransactionModel from '@/data/classes/TransactionModel';
   })
 
   function showAddEditDialog(transaction?: Transaction) {
-    console.log(transaction);
+    
+    transactionSplitModels.value = [];      
     if (transaction) {
       transactionModel.value = new TransactionModel(transaction);
+      if (transaction.splitId) {
+        for (var trans of transactions.value.filter(x => x.splitId === transaction.splitId)) {
+          console.log(trans);
+          transactionSplitModels.value.push(new TransactionSplitModel({
+            pk: trans.pk,
+            transactionId: trans.splitId ?? 0,
+            amount: trans.amount,
+            categoryId: trans.categoryId ?? 0,
+            subcategoryId: trans.subcategoryId ?? 0,
+            exclude: trans.exclude ?? false
+          }));
+        }
+      }
     } else {
       transactionModel.value = new TransactionModel();
     }

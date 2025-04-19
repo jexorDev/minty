@@ -15,10 +15,10 @@ import { VDateInput } from 'vuetify/labs/components'
 const appTheme: ThemeDefinition = {
   dark: true,
   colors: {    
-    primary: '#6C3BAA',
-    'primary-darken-1': '#3700B3',
-    secondary: '#5411AB',
-    'secondary-darken-1': '#3CAE63',
+    primary: '#50C878',
+    'primary-darken-1': '#3CAE63',
+    secondary: '#A379D9',
+    'secondary-darken-1': '#6C3BAA',
     error: '#B00020',
     info: '#2196F3',
     success: '#4CAF50',

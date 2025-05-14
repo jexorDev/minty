@@ -1,6 +1,5 @@
 <template>
-    <v-container class="fill-height">
-      <v-responsive>
+
         <!-- <v-autocomplete :items="autoCompleteObjects" chip item-title="text" item-value="text" variant="underlined" density="compact">
           <template v-slot:chip="{ props, item }" >
                   <v-chip
@@ -54,20 +53,21 @@
         <v-list>
           <v-list-item v-for="transaction in transactions" :key="transaction.pk" @click="showAddEditDialog(transaction)">
             <v-list-item-title>{{ transaction.description }}</v-list-item-title>
-            <v-list-item-subtitle>{{ transaction.notes }}</v-list-item-subtitle>
             <v-list-item-subtitle>{{ transaction.categoryName }}</v-list-item-subtitle>
+            <v-list-item-subtitle class="font-italic mt-1">{{ transaction.notes }}</v-list-item-subtitle>
             <template v-slot:append>
               <v-list-item-action class="flex-column align-end">
-                <small>{{ transaction.transactionDate }}</small>
+                <small>{{ formatDate(transaction.transactionDate) }}</small>
                 <div>{{ transaction.amount }}</div>
               </v-list-item-action>
             </template>
           </v-list-item>
         </v-list>
+        <div v-show="isLoading">Loading...</div>
+        <div v-show="noResults">No results</div>
 
         <v-fab :app="true" @click="showAddEditDialog()" icon="mdi-plus" color="primary"></v-fab>
-    </v-responsive>
-</v-container>
+
     <TransactionAddForm v-model="transactionModel" v-model:splits="transactionSplitModels" @cancel="showAddTransactionDialog = false" @save="save" :show="showAddTransactionDialog"></TransactionAddForm>
   </template>
   
@@ -81,7 +81,7 @@ import TransactionModel from '@/data/classes/TransactionModel';
 import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
 import ModelList from '@/data/classes/ModelList';
 import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSplit';
-  
+  import dayjs from 'dayjs';
   
   interface AutoCompleteObject {
     type: string;
@@ -103,7 +103,9 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
   const years = ref<number[]>([]);
   const transactionModel = ref<TransactionModel>(new TransactionModel());
   const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();
-  
+  const isLoading = ref(false);
+  const noResults = ref(false);
+
   let timerId: number | null = null;
   
   const headers = ref([
@@ -150,6 +152,7 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
 
     if (!searchString) {
       transactions.value = [];
+      noResults.value = false;
       return;
     }
 
@@ -158,12 +161,25 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
       // .withUrlParameters({
       //   searchString: searchString
       // }).getMultiple();
-      transactions.value = await new TransactionsService()
-      .withUrlParameters({
-        searchString: searchString
-      }).getMultiple();
+
+      try {
+        isLoading.value = true;
+        transactions.value = await new TransactionsService()
+        .withUrlParameters({
+          searchString: searchString
+        }).getMultiple();
+        
+      } finally {
+        noResults.value = transactions.value.length === 0;
+        isLoading.value = false;
+      }
+
       }, 1000); 
       
+  }
+
+  function formatDate(date: string | Date): string {
+    return dayjs(date).format("MM/DD/YYYY")
   }
 
   watch(selectedYear, async (newValue, oldValue) => {

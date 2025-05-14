@@ -1,9 +1,11 @@
 import type Transaction from "../interfaces/Transactions/Transaction";
-import type TransactionSplit from "../interfaces/Transactions/TransactionSplit";
 import BaseModel from "./BaseModel";
-import TransactionSplitModel from "./TransactionSplitModel";
 
 export default class TransactionModel extends BaseModel<Transaction> {
+    
+    get pk() {
+        return this.model.pk;
+    }
 
     constructor(transaction?: Transaction) {
         super(transaction);

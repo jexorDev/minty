@@ -21,14 +21,27 @@
           <v-card-text>
             <v-row>
               <v-col>
-                <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact"></v-select>
+                <!-- <v-autocomplete :search="searchString" @update:search="searchUpdate" :items="searchItems" item-title="description" density="compact" no-filter>
+                  <template v-slot:item="{props, item}">
+                    <v-list-item
+                      v-bind="props"                      
+                      @click="showAddEditDialog(item.raw)">                      
+                      <v-list-item-subtitle>{{ item.raw.categoryName }} | {{ item.raw.transactionDate }}</v-list-item-subtitle>
+                      <v-list-item-subtitle>{{ item.raw.notes }}</v-list-item-subtitle>
+                    </v-list-item>
+                  </template>
+                </v-autocomplete> -->
+                <v-text-field label="Search" @update:model-value="searchUpdate" clearable></v-text-field>
               </v-col>
+              <!-- <v-col>
+                <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact"></v-select>
+              </v-col> -->
             </v-row>
 
           </v-card-text>
 
         </v-card>
-        <v-data-table-virtual :headers="headers" :items="transactions" fixed-header>
+<!--         <v-data-table-virtual :headers="headers" :items="transactions" fixed-header>
           <template v-slot:item.actions="{ item }">
         <div class="d-flex ga-2 justify-end">
           <v-icon color="medium-emphasis" icon="mdi-pencil" size="small" @click="showAddEditDialog(item)"></v-icon>
@@ -36,7 +49,22 @@
           
         </div>
       </template>
-        </v-data-table-virtual>
+        </v-data-table-virtual> -->
+
+        <v-list>
+          <v-list-item v-for="transaction in transactions" :key="transaction.pk" @click="showAddEditDialog(transaction)">
+            <v-list-item-title>{{ transaction.description }}</v-list-item-title>
+            <v-list-item-subtitle>{{ transaction.notes }}</v-list-item-subtitle>
+            <v-list-item-subtitle>{{ transaction.categoryName }}</v-list-item-subtitle>
+            <template v-slot:append>
+              <v-list-item-action class="flex-column align-end">
+                <small>{{ transaction.transactionDate }}</small>
+                <div>{{ transaction.amount }}</div>
+              </v-list-item-action>
+            </template>
+          </v-list-item>
+        </v-list>
+
         <v-fab :app="true" @click="showAddEditDialog()" icon="mdi-plus" color="primary"></v-fab>
     </v-responsive>
 </v-container>
@@ -51,6 +79,8 @@
   import CategoryService from '@/data/services/CategoryService'; 
 import TransactionModel from '@/data/classes/TransactionModel';
 import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
+import ModelList from '@/data/classes/ModelList';
+import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSplit';
   
   
   interface AutoCompleteObject {
@@ -60,10 +90,11 @@ import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
   }
   
   const transactions = ref<Transaction[]>([]);
-  
+  const searchItems = ref<Transaction[]>([])
   const categories = ref<Category[]>([]);
   const selectedFilter = ref<AutoCompleteObject | null>(null);
   const fromDate = ref(Date.now().toString())
+  const searchString = ref("");
   const showAddTransactionDialog = ref(false);
   const loading = ref(false);
   provide('show', showAddTransactionDialog);
@@ -71,8 +102,10 @@ import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
   const selectedYear = ref(2024);
   const years = ref<number[]>([]);
   const transactionModel = ref<TransactionModel>(new TransactionModel());
-  const transactionSplitModels = ref<TransactionSplitModel[]>([]);
-
+  const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();
+  
+  let timerId: number | null = null;
+  
   const headers = ref([
     {title: 'Date', key: 'transactionDate'},
     {title: 'Description', key: 'description'},
@@ -87,7 +120,7 @@ import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
       years.value.push(year);
     }
     
-    getData();
+    //getData();
 
     categories.value = await new CategoryService().getMultiple();
   });
@@ -110,19 +143,43 @@ import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
       }).getMultiple();
   }
 
+  function searchUpdate(searchString: string): void {
+    if (timerId) {
+      clearTimeout(timerId);
+    }
+
+    if (!searchString) {
+      transactions.value = [];
+      return;
+    }
+
+    timerId = setTimeout(async () => {
+      // searchItems.value = await new TransactionsService()
+      // .withUrlParameters({
+      //   searchString: searchString
+      // }).getMultiple();
+      transactions.value = await new TransactionsService()
+      .withUrlParameters({
+        searchString: searchString
+      }).getMultiple();
+      }, 1000); 
+      
+  }
+
   watch(selectedYear, async (newValue, oldValue) => {
     await getData();
   })
 
   function showAddEditDialog(transaction?: Transaction) {
     
-    transactionSplitModels.value = [];      
+    transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>([]);
+
     if (transaction) {
       transactionModel.value = new TransactionModel(transaction);
       if (transaction.splitId) {
+        var splitModels: TransactionSplitModel[] = [];
         for (var trans of transactions.value.filter(x => x.splitId === transaction.splitId)) {
-          console.log(trans);
-          transactionSplitModels.value.push(new TransactionSplitModel({
+          splitModels.push(new TransactionSplitModel({
             pk: trans.pk,
             transactionId: trans.splitId ?? 0,
             amount: trans.amount,
@@ -131,6 +188,7 @@ import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
             exclude: trans.exclude ?? false
           }));
         }
+        transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>(splitModels);
       }
     } else {
       transactionModel.value = new TransactionModel();

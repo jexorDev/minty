@@ -27,8 +27,8 @@
 
               <v-card >
                 <v-card-text>
-                  <v-text-field v-model="selectedCategory?.name">                    
-                  </v-text-field>
+                  <!-- <v-text-field v-model="selectedCategory?.name">                    
+                  </v-text-field> -->
                   
                 </v-card-text>
               </v-card>
@@ -93,5 +93,5 @@ onMounted(async () => {
   categories.value = await new CategoryService().getMultiple();
 })
 
-const tab = ref("option-1")
+const tab = ref("option-1");
 </script>

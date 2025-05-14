@@ -14,6 +14,8 @@ export default abstract class BaseModel<T> {
         }
     }
 
+    abstract get pk(): number | undefined;
+
     public save(service: BaseService<T>): void {
         if (this.isNew) {
             service.post(this.model);

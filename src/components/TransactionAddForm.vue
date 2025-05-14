@@ -65,14 +65,14 @@
           </v-col>
         </v-row>
         <h1>Splits</h1>
-        <v-row v-for="split in splits">
+        <!-- <v-row v-for="split in splits.currentModels">
           <v-col>
-            <v-select label="Category" v-model="split.categoryId" :items="categories" item-title="name" item-value="pk"></v-select>
+            <v-select label="Category" v-model="split.model.categoryId" :items="categories" item-title="name" item-value="pk"></v-select>
           </v-col>
           <v-col>
             <v-text-field v-model="split.amount"></v-text-field>
           </v-col>
-        </v-row>
+        </v-row> -->
       </v-container>
     </v-form>
 
@@ -83,9 +83,11 @@ import type Category from '@/data/interfaces/Category';
 import CategoryService from '@/data/services/CategoryService';
 import type TransactionModel from '@/data/classes/TransactionModel';
 import type TransactionSplitModel from '@/data/classes/TransactionSplitModel';
+import type ModelList from '@/data/classes/ModelList';
 
 const model = defineModel<TransactionModel>({required: true});
-const splits = defineModel<TransactionSplitModel[]>("splits");
+//const splits = defineModel<ModelList<TransactionSplitModel>>("splits", {required: true});
+
 
 onMounted(async () => {
   categories.value = await new CategoryService()

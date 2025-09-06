@@ -3,7 +3,7 @@ import BaseModel from "./BaseModel";
 export default class ModelList<BaseModel, T> {
     #existingModels: BaseModel[] = [];
     #deletedModels: BaseModel[] = [];
-    #addedModels: AddedModel<T>[] = [];
+    #addedModels: BaseModel[] = [];
     #addedTempIdSequence: number = 0;
     
     constructor(existingModels?: BaseModel[]) {
@@ -15,13 +15,13 @@ export default class ModelList<BaseModel, T> {
         }
     }
 
-    get currentModels() {
-        return [...this.#addedModels, this.#existingModels];
+    get currentModels(): BaseModel[] {
+        return [...this.#addedModels, ...this.#existingModels];
     }
 
-    public add(instance: T) {
-        this.#addedTempIdSequence++;
-        this.#addedModels.push(new AddedModel<T>(instance, this.#addedTempIdSequence));
+    public add(instance: BaseModel) {
+        //this.#addedTempIdSequence++;
+        this.#addedModels.push(instance);
     }
 
     public deleteModel(model: BaseModel | AddedModel<T>) {

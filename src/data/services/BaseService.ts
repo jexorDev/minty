@@ -9,12 +9,12 @@ export default abstract class BaseService<T> {
         this.urlPath = urlPath;
     }
 
-    private get url(): string {
+    protected get url(): string {
         return `${import.meta.env.VITE_API_BASE_URL}/${this.urlPath}`;
     }
 
-    async getSingle(): Promise<T> {
-        const results = await this.getMultiple();
+    async getSingle(routeParameter?: string): Promise<T> {
+        const results = await this.getMultiple(routeParameter);
         if (results.length > 0) {
             return results[0];
         } else {
@@ -22,8 +22,8 @@ export default abstract class BaseService<T> {
         }
     }
 
-    async getMultiple(): Promise<T[]> {
-        const fullUrl = this.url + (this.urlParameters == "" ? "" : `?${this.urlParameters}`);
+    async getMultiple(routeParameter?: string): Promise<T[]> {
+        const fullUrl = this.url + (routeParameter == undefined ? "" : `/${routeParameter}`) + (this.urlParameters == "" ? "" : `?${this.urlParameters}`);
         const res = await axios.get(fullUrl, {
             params: qs.stringify("")
         });
@@ -33,6 +33,11 @@ export default abstract class BaseService<T> {
     async post(data: T): Promise<T> {
         const res = await axios.post(this.url, data);
         return res.data as T;
+    }
+
+    async postFile(file: FormData, trailingUrl: string): Promise<void> {
+        console.log(file)
+        const res = await axios.post(`${this.url}/${trailingUrl}` , file, { headers: {"Content-Type": "multipart/form-data"}});
     }
 
     async put(data: T): Promise<T> {

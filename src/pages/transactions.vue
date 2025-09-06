@@ -32,9 +32,22 @@
                 </v-autocomplete> -->
                 <v-text-field label="Search" @update:model-value="searchUpdate" clearable></v-text-field>
               </v-col>
+              
               <!-- <v-col>
                 <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact"></v-select>
               </v-col> -->
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-select v-model="selectedImportType" :items="importTypes"></v-select>
+              </v-col>
+              <v-col>
+                  <v-file-input
+                  v-model="selectedFileUpload"
+                  label="File input"
+                ></v-file-input>
+                <v-btn @click="uploadFile">Upload</v-btn>
+              </v-col>
             </v-row>
 
           </v-card-text>
@@ -82,6 +95,7 @@ import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
 import ModelList from '@/data/classes/ModelList';
 import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSplit';
   import dayjs from 'dayjs';
+import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   
   interface AutoCompleteObject {
     type: string;
@@ -102,9 +116,12 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
   const selectedYear = ref(2024);
   const years = ref<number[]>([]);
   const transactionModel = ref<TransactionModel>(new TransactionModel());
-  const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();
+  const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();  
   const isLoading = ref(false);
   const noResults = ref(false);
+  const selectedFileUpload = ref<File|null>(null);
+  const importTypes = ['Mint', 'Rocket Money'];
+  const selectedImportType = ref<string>("Mint");
 
   let timerId: number | null = null;
   
@@ -143,6 +160,15 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
         fromDate: `${selectedYear.value}-01-01`,
         toDate: `${selectedYear.value}-12-31`
       }).getMultiple();
+  }
+
+  async function uploadFile(): Promise<void> {
+    if (selectedFileUpload.value === null) return;
+
+    const form = new FormData();
+    form.append('csvFile', selectedFileUpload.value);
+    var importType = selectedImportType.value === 'Mint' ? 'mint' : 'rocketmoney';
+    await new TransactionsService().postFile(form, `file/${importType}`);
   }
 
   function searchUpdate(searchString: string): void {
@@ -186,7 +212,7 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
     await getData();
   })
 
-  function showAddEditDialog(transaction?: Transaction) {
+  async function showAddEditDialog(transaction?: Transaction) {
     
     transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>([]);
 
@@ -194,17 +220,20 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
       transactionModel.value = new TransactionModel(transaction);
       if (transaction.splitId) {
         var splitModels: TransactionSplitModel[] = [];
-        for (var trans of transactions.value.filter(x => x.splitId === transaction.splitId)) {
-          splitModels.push(new TransactionSplitModel({
-            pk: trans.pk,
-            transactionId: trans.splitId ?? 0,
-            amount: trans.amount,
-            categoryId: trans.categoryId ?? 0,
-            subcategoryId: trans.subcategoryId ?? 0,
-            exclude: trans.exclude ?? false
-          }));
-        }
+
+        // for (var trans of await new TransactionSplitsService(transaction.pk!).getMultiple()) {
+        //   splitModels.push(new TransactionSplitModel({
+        //     pk: trans.pk,
+        //     transactionId: trans.transactionId,
+        //     amount: trans.amount,
+        //     categoryId: trans.categoryId ?? 0,
+        //     subcategoryId: trans.subcategoryId ?? 0,
+        //     exclude: trans.exclude ?? false
+        //   }));
+        // }
+        
         transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>(splitModels);
+        
       }
     } else {
       transactionModel.value = new TransactionModel();

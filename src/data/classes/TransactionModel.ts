@@ -13,7 +13,11 @@ export default class TransactionModel extends BaseModel<Transaction> {
         if (this.isNew) {
             this.transactionDate = new Date();
         }     
-    }    
+    }   
+    
+    get splitId() {
+        return this.model.splitId;
+    }
 
     get transactionDate() {
         return this.model.transactionDate;

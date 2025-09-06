@@ -10,30 +10,44 @@
         <v-tab prepend-icon="mdi-bank" text="Accounts" value="option-3"></v-tab>
       </v-tabs>
 
+      <v-container fluid>
       <v-tabs-window v-model="tab">
-        <v-tabs-window-item value="option-1">        
-          <v-row>
-            <v-col>
-              <v-list>
-                <v-list-item v-for="categoory in categories" @click="selectedCategory = categoory">
-                  {{ categoory.name }}
-                </v-list-item>
-              </v-list>
-                  
-              
-            </v-col>
-            <v-col>
+        <v-tabs-window-item value="option-1">  
+            <v-row>
+              <v-col :cols="4">
+                <v-list style="height: 97vh; overflow: auto;">
+                  <v-list-item v-for="category in categories" @click="selectedCategory = category">
+                    <v-list-item-title>
+                      {{ category.name }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle :style="{color: getCategoryType(category.type)?.color}" >
+                      
+                      {{  getCategoryType(category.type)?.description }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+                    
                 
-
-              <v-card >
-                <v-card-text>
-                  <!-- <v-text-field v-model="selectedCategory?.name">                    
-                  </v-text-field> -->
+              </v-col>
+              <v-col :cols="8">
                   
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
+  
+                <v-card v-if="selectedCategory">
+                  <v-card-title>Edit Category</v-card-title>
+                  <v-card-text>
+                    <v-text-field v-model="selectedCategory.name">                    
+                    </v-text-field> 
+                    <v-select v-model="selectedCategory.type" :items="categoryTypes" item-value="value" item-title="description">
+  
+                    </v-select>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-btn @click="saveCategory()">Save</v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-col>
+            </v-row>
+
           
         </v-tabs-window-item>
 
@@ -77,6 +91,8 @@
           </v-card>
         </v-tabs-window-item>
       </v-tabs-window>
+          </v-container>      
+
     </div>
 </template>
 <script setup lang="ts">
@@ -88,10 +104,26 @@ const { mobile } = useDisplay()
 
 const categories = ref<Category[]>([]);
 const selectedCategory = ref<Category | null>(null);
+const categoryTypes : {value: number, description: string, color: string}[] = [
+  {value: 0, description: "Expense", color: "#DC143C"},
+  {value: 1, description: "Income", color: "#3CB371"},
+  {value: 2, description: "Transfer", color: "#1E90FF"},
+  {value: 3, description: "Exclude", color: ""}
+];
 
 onMounted(async () => {
   categories.value = await new CategoryService().getMultiple();
 })
+
+async function saveCategory() {
+  if (!selectedCategory.value) return;
+
+  await new CategoryService().put(selectedCategory.value);
+}
+
+function getCategoryType(id: number) {
+  return categoryTypes.find(x => x.value === id);
+}
 
 const tab = ref("option-1");
 </script>

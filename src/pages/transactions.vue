@@ -30,24 +30,32 @@
                     </v-list-item>
                   </template>
                 </v-autocomplete> -->
-                <v-text-field label="Search" @update:model-value="searchUpdate" clearable></v-text-field>
+                <v-text-field label="Quick Search" @update:model-value="searchUpdate" clearable></v-text-field>
               </v-col>
               
-              <!-- <v-col>
-                <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact"></v-select>
-              </v-col> -->
             </v-row>
-            <v-row>
+            <v-row no-gutters>
               <v-col>
-                <v-select v-model="selectedImportType" :items="importTypes"></v-select>
-              </v-col>
-              <v-col>
-                  <v-file-input
-                  v-model="selectedFileUpload"
-                  label="File input"
-                ></v-file-input>
-                <v-btn @click="uploadFile">Upload</v-btn>
-              </v-col>
+               <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact" max-width="200"></v-select>
+             </v-col> 
+             <v-col>
+              <v-chip-group v-model="selectedMonth" selected-class="v-chip--selected v-chip--variant-flat" mandatory>
+                <v-chip value="1">Jan</v-chip>
+                <v-chip value="2">Feb</v-chip>
+                <v-chip value="3">Mar</v-chip>
+                <v-chip value="4">Apr</v-chip>
+                <v-chip value="5">May</v-chip>
+                <v-chip value="6">Jun</v-chip>
+                <v-chip value="7">Jul</v-chip>
+                <v-chip value="8">Aug</v-chip>
+                <v-chip value="9">Sept</v-chip>
+                <v-chip value="10">Oct</v-chip>
+                <v-chip value="11">Nov</v-chip>
+                <v-chip value="12">Dec</v-chip>
+                
+              </v-chip-group>
+             </v-col>              
+              
             </v-row>
 
           </v-card-text>
@@ -79,9 +87,40 @@
         <div v-show="isLoading">Loading...</div>
         <div v-show="noResults">No results</div>
 
-        <v-fab :app="true" @click="showAddEditDialog()" icon="mdi-plus" color="primary"></v-fab>
+        <v-fab :app="true"  icon="mdi-plus" color="primary">
+          <v-icon>$plus</v-icon>
+           <v-speed-dial  activator="parent">
+          <v-btn key="1" color="primary" @click="showUploadDialog = true">
+            File
+          </v-btn>
+
+          <v-btn key="2" color="primary" @click="showAddEditDialog">
+            Single
+          </v-btn>
+
+          
+        </v-speed-dial>
+        </v-fab>
 
     <TransactionAddForm v-model="transactionModel" v-model:splits="transactionSplitModels" @cancel="showAddTransactionDialog = false" @save="save" :show="showAddTransactionDialog"></TransactionAddForm>
+    <v-dialog v-model="showUploadDialog">
+      <v-card>
+        <v-card-text>
+
+          <v-select v-model="selectedImportType" :items="importTypes"></v-select>
+          
+                    <v-file-input
+                    v-model="selectedFileUpload"
+                    label="File input"
+                  ></v-file-input>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="showUploadDialog = false">Cancel</v-btn>
+          <v-btn @click="uploadFile">Upload</v-btn>
+
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </template>
   
   <script setup lang="ts">
@@ -122,6 +161,8 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   const selectedFileUpload = ref<File|null>(null);
   const importTypes = ['Mint', 'Rocket Money'];
   const selectedImportType = ref<string>("Mint");
+  const showUploadDialog = ref(false);
+  const selectedMonth = ref(1);
 
   let timerId: number | null = null;
   
@@ -157,8 +198,8 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   async function getData(): Promise<void> {
     transactions.value = await new TransactionsService()
       .withUrlParameters({
-        fromDate: `${selectedYear.value}-01-01`,
-        toDate: `${selectedYear.value}-12-31`
+        fromDate: `${selectedYear.value}-${selectedMonth.value.toString().padStart(2, '0')}-01`,
+        toDate: `${selectedYear.value}-${selectedMonth.value.toString().padStart(2, '0')}-30`
       }).getMultiple();
   }
 
@@ -168,7 +209,13 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
     const form = new FormData();
     form.append('csvFile', selectedFileUpload.value);
     var importType = selectedImportType.value === 'Mint' ? 'mint' : 'rocketmoney';
-    await new TransactionsService().postFile(form, `file/${importType}`);
+    try {
+      await new TransactionsService().postFile(form, `file/${importType}`);
+
+    } finally {
+      showUploadDialog.value = false;
+
+    }
   }
 
   function searchUpdate(searchString: string): void {
@@ -209,6 +256,11 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   }
 
   watch(selectedYear, async (newValue, oldValue) => {
+    await getData();
+  })
+
+  watch(selectedMonth, async (newValue, oldValue) => {
+    console.log(selectedMonth.value)
     await getData();
   })
 

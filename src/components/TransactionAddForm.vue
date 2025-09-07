@@ -64,8 +64,20 @@
             <v-checkbox v-model="model.exclude" label="Exclude"></v-checkbox>
           </v-col>
         </v-row>
-        <h1>Splits</h1>
-        <v-btn @click="addNew()">Add</v-btn>
+        <v-row>
+          <v-col>
+            <h1>Splits</h1>
+
+          </v-col>
+          <v-col>
+
+            <v-checkbox v-model="splitEqually">Split Equally</v-checkbox>
+          </v-col>
+          <v-col>
+
+            <v-btn @click="addNew()" variant="elevated" color="primary">Add</v-btn>
+          </v-col>
+        </v-row>
         <v-row v-for="split of transactionSplits">
           <v-col>
             <v-select label="Category" v-model="split.categoryId" :items="categories" item-title="name" item-value="pk"></v-select>
@@ -73,7 +85,15 @@
           <v-col>
             <v-text-field v-model="split.amount"></v-text-field>
           </v-col>
+          <v-col>
+            <v-btn @click="deleteSplit(split)" color="secondary">Delete</v-btn>
+          </v-col>
         </v-row> 
+        <v-row>
+          <v-col>
+            Remaining allocation: {{ remainingSplitAllocation }}
+          </v-col>
+        </v-row>
       </v-container>
     </v-form>
 
@@ -92,8 +112,9 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 
 const model = defineModel<TransactionModel>({required: true});
 const splits = defineModel<ModelList<TransactionSplitModel, TransactionSplit>>("splits");
-const transaction = ref<Transaction>({} as Transaction);
+const transaction = ref<Transaction | null>(null);
 const transactionSplits = ref<TransactionSplit[]>([] as TransactionSplit[]);
+const splitEqually = ref(true);
 
 onMounted(async () => {
   categories.value = await new CategoryService()
@@ -102,13 +123,11 @@ onMounted(async () => {
 })
 
   watch(model, async (newValue, oldValue) => {
+    transactionSplits.value = [];
      if (newValue.pk) {
-      transaction.value = await new TransactionsService().getSingle(newValue.pk.toString());
+      transaction.value = await new TransactionsService().getSingle((newValue.splitId ?? newValue.pk).toString());
       if (newValue.splitId) {
-        for (const split of await new TransactionSplitsService(newValue.splitId).getSingle()) {
-          transactionSplits.value.push(split);
-        }
-        console.log(transactionSplits.value)
+        transactionSplits.value = await new TransactionSplitsService(newValue.splitId).getMultiple();
       }
     }
   })
@@ -118,18 +137,61 @@ function addNew() {
   //   splits.value.add(new TransactionSplitModel({} as TransactionSplit));
 
   // }
-  console.log(transactionSplits.value)
+  var amount = 0;
+  
+  if (splitEqually.value) {
+    const splitCount =  transactionSplits.value.length + 1;
+    var dividedAmount = transaction.value!.amount / splitCount;
+    var roundingError = transaction.value!.amount - (dividedAmount * splitCount);
+
+    console.log(transaction);
+
+    amount = dividedAmount + roundingError;
+
+    for (const split of transactionSplits.value) {
+      split.amount = dividedAmount;
+    }
+
+  } else {
+    amount = transaction.value!.amount - transactionSplits.value.reduce((acc, x) => {return acc + x.amount}, 0);
+  }
 
   transactionSplits.value.push({
     pk: 0,
     categoryId: model.value.categoryId,
-    amount: model.value.amount
+    amount: amount
   } as TransactionSplit);
 }
 
-async function save() {
-  await new TransactionSplitsService(model.value.pk!).post(transactionSplits.value)
+function deleteSplit(split: TransactionSplit) {
+  transactionSplits.value = transactionSplits.value.filter(t => t !== split);
+
+  if (splitEqually.value && transactionSplits.value.length > 0) {
+    const splitCount =  transactionSplits.value.length;
+    var dividedAmount = transaction.value!.amount / splitCount;
+    var roundingError = transaction.value!.amount - (dividedAmount * splitCount);
+
+
+    
+
+    for (const split of transactionSplits.value) {
+      split.amount = dividedAmount;
+    }
+
+  } 
 }
+
+async function save() {
+  await new TransactionSplitsService(model.value.pk!).postMultiple(transactionSplits.value)
+}
+
+const remainingSplitAllocation = computed(() => {
+  if (transactionSplits.value.length === 0) {
+    return transaction.value?.amount ?? 0;
+  } else {
+    return (transaction.value?.amount ?? 0)  - transactionSplits.value.reduce((acc, x) => {return acc + x.amount}, 0);
+  }
+})
 
 const categories = ref<Category[]>([]);
 const valid = ref(true);

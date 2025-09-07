@@ -14,12 +14,11 @@ export default abstract class BaseService<T> {
     }
 
     async getSingle(routeParameter?: string): Promise<T> {
-        const results = await this.getMultiple(routeParameter);
-        if (results.length > 0) {
-            return results[0];
-        } else {
-            return {} as T;
-        }
+        const fullUrl = this.url + (routeParameter == undefined ? "" : `/${routeParameter}`) + (this.urlParameters == "" ? "" : `?${this.urlParameters}`);
+        const res = await axios.get(fullUrl, {
+            params: qs.stringify("")
+        });
+        return (res.data as T);
     }
 
     async getMultiple(routeParameter?: string): Promise<T[]> {
@@ -33,6 +32,11 @@ export default abstract class BaseService<T> {
     async post(data: T): Promise<T> {
         const res = await axios.post(this.url, data);
         return res.data as T;
+    }
+
+    async postMultiple(data: T[]): Promise<T[]> {
+        const res = await axios.post(this.url, data);
+        return res.data as T[];
     }
 
     async postFile(file: FormData, trailingUrl: string): Promise<void> {

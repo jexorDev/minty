@@ -105,10 +105,10 @@ const { mobile } = useDisplay()
 const categories = ref<Category[]>([]);
 const selectedCategory = ref<Category | null>(null);
 const categoryTypes : {value: number, description: string, color: string}[] = [
-  {value: 0, description: "Expense", color: "#DC143C"},
+  {value: 0, description: "Expense", color: "#1E90FF"},
   {value: 1, description: "Income", color: "#3CB371"},
-  {value: 2, description: "Transfer", color: "#1E90FF"},
-  {value: 3, description: "Exclude", color: ""}
+  {value: 2, description: "Exclude by Default", color: "#DC143C"},
+  {value: 3, description: "Exclude Always", color: ""}
 ];
 
 onMounted(async () => {

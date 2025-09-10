@@ -144,8 +144,6 @@ function addNew() {
     var dividedAmount = transaction.value!.amount / splitCount;
     var roundingError = transaction.value!.amount - (dividedAmount * splitCount);
 
-    console.log(transaction);
-
     amount = dividedAmount + roundingError;
 
     for (const split of transactionSplits.value) {
@@ -153,7 +151,7 @@ function addNew() {
     }
 
   } else {
-    amount = transaction.value!.amount - transactionSplits.value.reduce((acc, x) => {return acc + x.amount}, 0);
+    amount = transaction.value!.amount - transactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
   }
 
   transactionSplits.value.push({
@@ -189,7 +187,7 @@ const remainingSplitAllocation = computed(() => {
   if (transactionSplits.value.length === 0) {
     return transaction.value?.amount ?? 0;
   } else {
-    return (transaction.value?.amount ?? 0)  - transactionSplits.value.reduce((acc, x) => {return acc + x.amount}, 0);
+    return (transaction.value?.amount ?? 0)  - transactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
   }
 })
 

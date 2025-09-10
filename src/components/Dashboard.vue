@@ -41,7 +41,20 @@
   <v-row>
     <v-col>
       <v-card>
-        <apexchart type="line" height="350" :options="chartOptions" :series="series"></apexchart>
+        <apexchart  height="350" width="600" :options="chartOptions" :series="series"></apexchart>
+      </v-card>
+
+    </v-col>
+
+    <v-col>
+      <v-card>
+        <apexchart  height="350" width="600" :options="categoryTreemapChartOptions" :series="categoryTreeMapSeries"></apexchart>
+      </v-card>
+
+    </v-col>
+    <v-col>
+      <v-card>
+        <apexchart  height="350" width="600" :options="pieChartOptions" :series="pieChartSeries"></apexchart>
       </v-card>
 
     </v-col>
@@ -59,6 +72,8 @@ const totalIncomeCurrentYear = computed(() => categoryMonthTotals.value.filter(x
 const totalIncomePreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
 const currentYearChartData = ref<number[]>([]);
 const previousYearChartData = ref<number[]>([]);
+const treemapData = ref<{x: string, y: number}[]>([]);
+const pieChartData = ref<{x: string, y: number}[]>([]);
 const selectedCurrentYear = ref(2025);
 
 const series = computed(() => [{
@@ -72,10 +87,13 @@ const series = computed(() => [{
 const chartOptions = {
             chart: {
               height: 350,
-              type: 'line',
+              type: 'area',
               zoom: {
                 enabled: false
               }
+            },
+            theme: {
+              mode: 'dark'
             },
             dataLabels: {
               enabled: false
@@ -83,19 +101,51 @@ const chartOptions = {
             stroke: {
               curve: 'straight'
             },
-            title: {
-              text: 'Product Trends by Month',
-              align: 'left'
-            },
-            grid: {
-              row: {
-                colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
-                opacity: 0.5
-              },
-            },
+
+          
             xaxis: {
               categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             }
+          };
+
+  const categoryTreeMapSeries = computed(() => [{
+              data: treemapData.value
+          }
+       ]);
+const categoryTreemapChartOptions = {
+            chart: {
+              height: 350,
+              type: 'treemap',
+            },
+              theme: {
+              mode: 'dark'
+            },
+            
+          };
+
+      const pieChartSeries = computed(() => [{
+              data: pieChartData.value
+          }
+       ]);
+const pieChartOptions = {
+            chart: {
+              width: 380,
+              type: 'donut',
+            },
+              theme: {
+              mode: 'dark'
+            },
+              responsive: [{
+              breakpoint: 480,
+              options: {
+                chart: {
+                  width: 200
+                },
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }]
           };
 
 onMounted(async () => {
@@ -106,15 +156,41 @@ onMounted(async () => {
 
   currentYearChartData.value = getChartData(selectedCurrentYear.value);
   previousYearChartData.value = getChartData(selectedCurrentYear.value - 1);
-
+  treemapData.value = getTreemapData(selectedCurrentYear.value).sort((a, b) => {return b.y - a.y});
+  pieChartData.value = getTreemapData(selectedCurrentYear.value).sort((a, b) => {return a.y - b.y});
+  console.log(treemapData.value)
 })
 
 function getChartData(year: number) {
   const chartData : number[] = [];
 
   for (var i = 1; i <= 12; i++) {    
-    chartData.push(categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.month === i && x.year === year).reduce((acc, curr) => { return acc + curr.total}, 0));
+    chartData.push(categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.month <= i && x.year === year).reduce((acc, curr) => { return acc + curr.total}, 0));
   }
   return chartData;
+}
+
+function getTreemapData(year: number) {
+  const chartData: {x: string, y:number}[] = [];
+
+  for (var category of [...new Set(categoryMonthTotals.value.map(x => x.categoryName))]) {
+    chartData.push({x: category, y: getCategoryTotal(category, year)});
+  }
+
+  return chartData;
+}
+
+function getPieChartData(year: number) {
+    const chartData: number[] = [];
+
+  for (var category of [...new Set(categoryMonthTotals.value.map(x => x.categoryName))]) {
+    chartData.push(getCategoryTotal(category, year));
+  }
+
+  return chartData;
+}
+
+function getCategoryTotal(categoryName: string, year: number) {
+  return categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.categoryName === categoryName && x.year === year).reduce((acc, curr) => {return acc + curr.total}, 0)
 }
 </script>

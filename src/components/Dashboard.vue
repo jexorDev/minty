@@ -158,7 +158,6 @@ onMounted(async () => {
   previousYearChartData.value = getChartData(selectedCurrentYear.value - 1);
   treemapData.value = getTreemapData(selectedCurrentYear.value).sort((a, b) => {return b.y - a.y});
   pieChartData.value = getTreemapData(selectedCurrentYear.value).sort((a, b) => {return a.y - b.y});
-  console.log(treemapData.value)
 })
 
 function getChartData(year: number) {

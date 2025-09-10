@@ -36,7 +36,7 @@
         </v-row>
         <v-row>
           <v-col>
-            <v-select v-model="model.categoryId" label="Category" :items="categories" item-title="name" item-value="pk"></v-select>
+            <v-select v-model="model.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
           </v-col>
           <v-col>
             <v-select label="Subcategory"></v-select>
@@ -80,7 +80,7 @@
         </v-row>
         <v-row v-for="split of transactionSplits">
           <v-col>
-            <v-select label="Category" v-model="split.categoryId" :items="categories" item-title="name" item-value="pk"></v-select>
+            <v-select label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
           </v-col>
           <v-col>
             <v-text-field v-model="split.amount"></v-text-field>
@@ -109,18 +109,16 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
 import type Transaction from '@/data/interfaces/Transactions/Transaction';
 import TransactionsService from '@/data/services/TransactionsService';
 import TransactionSplitsService from '@/data/services/TransactionSplitsService';
+import {useCategoryStore} from '@/stores/CategoryStore';
 
 const model = defineModel<TransactionModel>({required: true});
 const splits = defineModel<ModelList<TransactionSplitModel, TransactionSplit>>("splits");
 const transaction = ref<Transaction | null>(null);
 const transactionSplits = ref<TransactionSplit[]>([] as TransactionSplit[]);
 const splitEqually = ref(true);
+const categoryStore = useCategoryStore();
 
-onMounted(async () => {
-  categories.value = await new CategoryService()
-    .getMultiple();
-   
-})
+
 
   watch(model, async (newValue, oldValue) => {
     transactionSplits.value = [];
@@ -191,7 +189,7 @@ const remainingSplitAllocation = computed(() => {
   }
 })
 
-const categories = ref<Category[]>([]);
+//const categories = ref<Category[]>([]);
 const valid = ref(true);
 
 </script>

@@ -16,7 +16,7 @@
             <v-row>
               <v-col :cols="4">
                 <v-list style="height: 97vh; overflow: auto;">
-                  <v-list-item v-for="category in categories" @click="selectedCategory = category">
+                  <v-list-item v-for="category in categoryStore.categories" @click="selectedCategory = category">
                     <v-list-item-title>
                       {{ category.name }}
                     </v-list-item-title>
@@ -99,10 +99,12 @@
 import type Category from '@/data/interfaces/Category';
 import CategoryService from '@/data/services/CategoryService';
 import { useDisplay } from 'vuetify'
+import { useCategoryStore } from '@/stores/CategoryStore';
 
+const categoryStore = useCategoryStore();
 const { mobile } = useDisplay()
 
-const categories = ref<Category[]>([]);
+//const categories = ref<Category[]>([]);
 const selectedCategory = ref<Category | null>(null);
 const categoryTypes : {value: number, description: string, color: string}[] = [
   {value: 0, description: "Expense", color: "#1E90FF"},
@@ -110,10 +112,6 @@ const categoryTypes : {value: number, description: string, color: string}[] = [
   {value: 2, description: "Exclude by Default", color: "#DC143C"},
   {value: 3, description: "Exclude Always", color: ""}
 ];
-
-onMounted(async () => {
-  categories.value = await new CategoryService().getMultiple();
-})
 
 async function saveCategory() {
   if (!selectedCategory.value) return;

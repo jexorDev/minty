@@ -135,7 +135,7 @@ import ModelList from '@/data/classes/ModelList';
 import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSplit';
   import dayjs from 'dayjs';
 import TransactionSplitsService from '@/data/services/TransactionSplitsService';
-  
+  import {useCategoryStore} from '@/stores/CategoryStore';
   interface AutoCompleteObject {
     type: string;
     text: string;
@@ -144,7 +144,7 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   
   const transactions = ref<Transaction[]>([]);
   const searchItems = ref<Transaction[]>([])
-  const categories = ref<Category[]>([]);
+  //const categories = ref<Category[]>([]);
   const selectedFilter = ref<AutoCompleteObject | null>(null);
   const fromDate = ref(Date.now().toString())
   const searchString = ref("");
@@ -163,6 +163,7 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   const selectedImportType = ref<string>("Mint");
   const showUploadDialog = ref(false);
   const selectedMonth = ref(1);
+  const categoryStore = useCategoryStore();
 
   let timerId: number | null = null;
   
@@ -182,7 +183,7 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
     
     //getData();
 
-    categories.value = await new CategoryService().getMultiple();
+//    categoryStore.categories = await new CategoryService().getMultiple();
   });
 
   async function save() {
@@ -294,7 +295,7 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   }  
   
   const transactionDescriptions = computed<string[]>(() => [...new Set(transactions.value.map(x => x.description))]);
-  const autoCompleteObjects = computed<AutoCompleteObject[]>(() => [...categories.value.map(x => {
+  const autoCompleteObjects = computed<AutoCompleteObject[]>(() => [...categoryStore.categories.map(x => {
     return {
       type: "Category",
       text: x.name,

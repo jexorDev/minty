@@ -121,7 +121,7 @@ const accountStore = useAccountStore();
   watch(model, async (newValue, oldValue) => {
     transactionSplits.value = [];
      if (newValue.pk) {
-      transaction.value = await new TransactionsService().getSingle((newValue.splitId ?? newValue.pk).toString());
+      transaction.value = await new TransactionsService().withRouteParameter((newValue.splitId ?? newValue.pk).toString()).getSingle();
       if (newValue.splitId) {
         transactionSplits.value = await new TransactionSplitsService(newValue.splitId).getMultiple();
       }
@@ -176,7 +176,7 @@ function deleteSplit(split: TransactionSplit) {
 }
 
 async function save() {
-  await new TransactionsService(transaction.value.pk).put(transaction.value);
+  await new TransactionsService().put(transaction.value);
   await new TransactionSplitsService(transaction.value.pk!).postMultiple(transactionSplits.value);
 }
 

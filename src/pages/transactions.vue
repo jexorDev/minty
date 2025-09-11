@@ -136,13 +136,16 @@ import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSpl
   import dayjs from 'dayjs';
 import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   import {useCategoryStore} from '@/stores/CategoryStore';
+import TransactionSearchService from '@/data/services/TransactionSearchService';
+import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
+import FileUploadService from '@/data/services/FileUploadService';
   interface AutoCompleteObject {
     type: string;
     text: string;
     value: number | string;
   }
   
-  const transactions = ref<Transaction[]>([]);
+  const transactions = ref<TransactionSearch[]>([]);
   const searchItems = ref<Transaction[]>([])
   //const categories = ref<Category[]>([]);
   const selectedFilter = ref<AutoCompleteObject | null>(null);
@@ -198,7 +201,7 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   }
 
   async function getData(): Promise<void> {
-    transactions.value = await new TransactionsService()
+    transactions.value = await new TransactionSearchService()
       .withUrlParameters({
         fromDate: `${selectedYear.value}-${selectedMonth.value.toString().padStart(2, '0')}-01`,
         toDate: `${selectedYear.value}-${selectedMonth.value.toString().padStart(2, '0')}-30`
@@ -210,9 +213,9 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 
     const form = new FormData();
     form.append('csvFile', selectedFileUpload.value);
-    var importType = selectedImportType.value === 'Mint' ? 'mint' : 'rocketmoney';
+    var importType = selectedImportType.value === 'Mint' ? "0" : "1";
     try {
-      await new TransactionsService().postFile(form, `file/${importType}`);
+      await new FileUploadService().withRouteParameter(importType).postFile(form);
 
     } finally {
       showUploadDialog.value = false;
@@ -265,7 +268,7 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
     await getData();
   })
 
-  async function showAddEditDialog(transaction?: Transaction) {
+  async function showAddEditDialog(transaction?: TransactionSearch) {
     
     transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>([]);
 

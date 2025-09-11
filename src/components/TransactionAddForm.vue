@@ -7,7 +7,7 @@
             cols="12"
             md="3"
           >
-           <v-date-input v-model="model.transactionDate"></v-date-input>
+           <v-date-input v-model="transaction.transactionDate"></v-date-input>
           </v-col>
   
           <v-col
@@ -15,7 +15,7 @@
             md="6"
           >
             <v-text-field
-              v-model="model.description"
+              v-model="transaction.description"
               label="Description"
               required
             ></v-text-field>
@@ -27,7 +27,7 @@
             md="3"
           >
             <v-text-field
-              v-model="model.amount"
+              v-model="transaction.amount"
               label="Amount"
               required
             ></v-text-field>
@@ -36,32 +36,27 @@
         </v-row>
         <v-row>
           <v-col>
-            <v-select v-model="model.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
+            <v-autocomplete v-model="transaction.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
           <v-col>
             <v-select label="Subcategory"></v-select>
           </v-col>
           <v-col>
-            <v-select label="Merchant"></v-select>
+            <v-autocomplete v-model="transaction.merchantId" label="Merchant" :items="merchantStore.merchants" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
         </v-row>
         <v-row>
           <v-col>
-            <v-select label="Account"></v-select>
+            <v-autocomplete v-model="transaction.accountId" label="Account" :items="accountStore.accounts" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
         </v-row>
         <v-row>
           <v-col>
             <v-text-field
-              v-model="model.notes"
+              v-model="transaction.notes"
               label="Notes"
               required
             ></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-checkbox v-model="model.exclude" label="Exclude"></v-checkbox>
           </v-col>
         </v-row>
         <v-row>
@@ -89,7 +84,7 @@
             <v-btn @click="deleteSplit(split)" color="secondary">Delete</v-btn>
           </v-col>
         </v-row> 
-        <v-row>
+        <v-row v-if="transactionSplits.length > 0">
           <v-col>
             Remaining allocation: {{ remainingSplitAllocation }}
           </v-col>
@@ -110,14 +105,17 @@ import type Transaction from '@/data/interfaces/Transactions/Transaction';
 import TransactionsService from '@/data/services/TransactionsService';
 import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 import {useCategoryStore} from '@/stores/CategoryStore';
+import { useMerchantStore } from '@/stores/MerchantStore';
+import { useAccountStore } from '@/stores/AccountStore';
 
 const model = defineModel<TransactionModel>({required: true});
 const splits = defineModel<ModelList<TransactionSplitModel, TransactionSplit>>("splits");
-const transaction = ref<Transaction | null>(null);
+const transaction = ref<Transaction>({} as Transaction);
 const transactionSplits = ref<TransactionSplit[]>([] as TransactionSplit[]);
 const splitEqually = ref(true);
 const categoryStore = useCategoryStore();
-
+const merchantStore = useMerchantStore();
+const accountStore = useAccountStore();
 
 
   watch(model, async (newValue, oldValue) => {
@@ -139,7 +137,7 @@ function addNew() {
   
   if (splitEqually.value) {
     const splitCount =  transactionSplits.value.length + 1;
-    var dividedAmount = transaction.value!.amount / splitCount;
+    var dividedAmount = Math.round(transaction.value!.amount / splitCount * 100) / 100;
     var roundingError = transaction.value!.amount - (dividedAmount * splitCount);
 
     amount = dividedAmount + roundingError;
@@ -154,7 +152,7 @@ function addNew() {
 
   transactionSplits.value.push({
     pk: 0,
-    categoryId: model.value.categoryId,
+    categoryId: transaction.value.categoryId,
     amount: amount
   } as TransactionSplit);
 }
@@ -178,7 +176,8 @@ function deleteSplit(split: TransactionSplit) {
 }
 
 async function save() {
-  await new TransactionSplitsService(model.value.pk!).postMultiple(transactionSplits.value)
+  await new TransactionsService(transaction.value.pk).put(transaction.value);
+  await new TransactionSplitsService(transaction.value.pk!).postMultiple(transactionSplits.value);
 }
 
 const remainingSplitAllocation = computed(() => {

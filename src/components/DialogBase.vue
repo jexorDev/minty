@@ -5,14 +5,7 @@
           fullscreen
           :loading="loading"
         >
-          <template v-slot:activator="{ props: activatorProps }">
-            <v-btn
-              prepend-icon="mdi-cog"
-              size="small"
-              text="Settings"
-              v-bind="activatorProps"
-            ></v-btn>
-          </template>
+        
     
           <v-card>
             <v-toolbar color="secondary-darken-1" density="compact">

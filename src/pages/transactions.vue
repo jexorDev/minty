@@ -18,7 +18,7 @@
         </v-autocomplete> -->
         <v-card color="secondary-darken-1">
           <v-card-text>
-            <v-row>
+            <v-row no-gutters>
               <v-col>
                 <!-- <v-autocomplete :search="searchString" @update:search="searchUpdate" :items="searchItems" item-title="description" density="compact" no-filter>
                   <template v-slot:item="{props, item}">
@@ -186,14 +186,15 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 //    categoryStore.categories = await new CategoryService().getMultiple();
   });
 
-  async function save() {
-    try {
-      loading.value = true;
-      await transactionModel.value.save(new TransactionsService());      
-      showAddTransactionDialog.value = false;
-    } finally {
-      loading.value = false;
-    }
+  function save() {
+    // try {
+    //   loading.value = true;
+    //   await transactionModel.value.save(new TransactionsService());      
+       showAddTransactionDialog.value = false;
+    // } finally {
+    //   loading.value = false;
+    // }
+    getData();
   }
 
   async function getData(): Promise<void> {
@@ -261,7 +262,6 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
   })
 
   watch(selectedMonth, async (newValue, oldValue) => {
-    console.log(selectedMonth.value)
     await getData();
   })
 

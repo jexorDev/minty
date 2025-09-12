@@ -33,23 +33,38 @@
   
                 <v-card v-if="selectedCategory">
                   <v-card-title>Edit Category</v-card-title>
+
+                  <v-tabs v-model="selectedCategoryTab">
+                    <v-tab value="general">General</v-tab>
+                    <v-tab value="transactions">Transactions</v-tab>
+                  </v-tabs>
+
                   <v-card-text>
-                    <div class="text-overline">Name</div>
-                    <v-text-field v-model="selectedCategory.name"></v-text-field> 
-
-                    <div class="text-overline">Type</div>
-                    <v-btn-toggle v-model="selectedCategory.isIncome" mandatory>
-                      <v-btn>Expense</v-btn>
-                      <v-btn>Income</v-btn>                     
-                    </v-btn-toggle>
-
-                    <div class="text-overline">Statistics</div>
-                    <v-btn-toggle v-model="selectedCategory.type" mandatory>
-                      <v-btn>Always Include</v-btn>
-                      <v-btn>Exclude by Default</v-btn>
-                      <v-btn>Always Exclude</v-btn>
-
-                    </v-btn-toggle>                   
+                    <v-tabs-window v-model="selectedCategoryTab">
+                      <v-tabs-window-item value="general">
+                        <div class="text-overline">Name</div>
+                        <v-text-field v-model="selectedCategory.name"></v-text-field> 
+    
+                        <div class="text-overline">Type</div>
+                        <v-btn-toggle v-model="selectedCategory.type" mandatory>
+                          <v-btn>Expense</v-btn>
+                          <v-btn>Income</v-btn> 
+                          <v-btn>Transfer</v-btn>                     
+    
+                        </v-btn-toggle>
+    
+                        <div class="text-overline">Statistics</div>
+                        <v-btn-toggle v-model="selectedCategory.reportingType" mandatory>
+                          <v-btn>Always Include</v-btn>
+                          <v-btn>Exclude by Default</v-btn>
+                          <v-btn>Always Exclude</v-btn>
+    
+                        </v-btn-toggle>                   
+                      </v-tabs-window-item>
+                      <v-tabs-window-item value="transactions">
+                        <v-data-table :items="selectedCategoryTransactions"></v-data-table>
+                      </v-tabs-window-item>
+                    </v-tabs-window>
   
                     
                   </v-card-text>
@@ -129,6 +144,21 @@
             </v-row>
         </v-tabs-window-item>
       </v-tabs-window>
+      <v-snackbar
+      v-model="snackbar"
+    >
+      {{ snackbarText }}
+
+      <template v-slot:actions>
+        <v-btn
+          color="pink"
+          variant="text"
+          @click="snackbar = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
           </v-container>      
 
     </div>
@@ -144,6 +174,8 @@ import type Account from '@/data/interfaces/Account';
 import { useAccountStore } from '@/stores/AccountStore';
 import MerchantService from '@/data/services/MerchantService';
 import AccountService from '@/data/services/AccountService';
+import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
+import TransactionSearchService from '@/data/services/TransactionSearchService';
 
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
@@ -154,6 +186,11 @@ const { mobile } = useDisplay()
 //const categories = ref<Category[]>([]);
 const selectedCategory = ref<Category | null>(null);
 const categoryTypes : {value: number, description: string}[] = [
+  {value: 0, description: "Expense"},
+  {value: 1, description: "Income"},
+  {value: 2, description: "Transfer"}
+];
+const categoryReportingTypes : {value: number, description: string}[] = [
   {value: 0, description: "Include"},
   {value: 1, description: "Exclude by Default"},
   {value: 2, description: "Exclude Always"}
@@ -162,11 +199,23 @@ const categoryTypes : {value: number, description: string}[] = [
 const selectedMerchant = ref<Merchant | null>(null);
 const selectedAccount = ref<Account | null>(null);
 
+const selectedCategoryTab = ref("general");
+const selectedCategoryTransactions = ref<TransactionSearch[]>([]);
+const snackbar = ref(false);
+const snackbarText = ref("");
 
 async function saveCategory() {
   if (!selectedCategory.value) return;
 
-  await new CategoryService().put(selectedCategory.value);
+  try {
+    await new CategoryService().put(selectedCategory.value);
+
+  } finally {
+    snackbar.value = true;
+    snackbarText.value = `${selectedCategory.value.name} successfully saved`;
+  }
+
+
 }
 
 async function saveMerchant() {
@@ -185,5 +234,18 @@ function getCategoryType(id: number) {
   return categoryTypes.find(x => x.value === id);
 }
 
+watch (selectedCategory, () => {
+  selectedCategoryTab.value = "general";
+})
+
+watch(selectedCategoryTab, async () => {
+  if (selectedCategoryTab.value !== "transactions") return;
+
+  selectedCategoryTransactions.value = await new TransactionSearchService()
+  .withUrlParameters({
+    "categoryId": selectedCategory.value?.pk
+  }).getMultiple();
+  
+})
 const tab = ref("option-1");
 </script>

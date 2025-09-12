@@ -39,10 +39,6 @@ export default abstract class BaseService<T> {
         return res.data as T[];
     }
 
-    async postFile(file: FormData): Promise<void> {
-        const res = await axios.post(this.url, file, { headers: {"Content-Type": "multipart/form-data"}});
-    }
-
     async put(data: T): Promise<T> {
         const res = await axios.put(this.url, data);
         return res.data as T;

@@ -40,18 +40,18 @@
              </v-col> 
              <v-col>
               <v-chip-group v-model="selectedMonth" selected-class="v-chip--selected v-chip--variant-flat" mandatory>
-                <v-chip value="1">Jan</v-chip>
-                <v-chip value="2">Feb</v-chip>
-                <v-chip value="3">Mar</v-chip>
-                <v-chip value="4">Apr</v-chip>
-                <v-chip value="5">May</v-chip>
-                <v-chip value="6">Jun</v-chip>
-                <v-chip value="7">Jul</v-chip>
-                <v-chip value="8">Aug</v-chip>
-                <v-chip value="9">Sept</v-chip>
-                <v-chip value="10">Oct</v-chip>
-                <v-chip value="11">Nov</v-chip>
-                <v-chip value="12">Dec</v-chip>
+                <v-chip >Jan</v-chip>
+                <v-chip >Feb</v-chip>
+                <v-chip >Mar</v-chip>
+                <v-chip >Apr</v-chip>
+                <v-chip >May</v-chip>
+                <v-chip >Jun</v-chip>
+                <v-chip >Jul</v-chip>
+                <v-chip >Aug</v-chip>
+                <v-chip >Sept</v-chip>
+                <v-chip >Oct</v-chip>
+                <v-chip >Nov</v-chip>
+                <v-chip >Dec</v-chip>
                 
               </v-chip-group>
              </v-col>              
@@ -103,24 +103,8 @@
         </v-fab>
 
     <TransactionAddForm v-model="transactionModel" v-model:splits="transactionSplitModels" @cancel="showAddTransactionDialog = false" @save="save" :show="showAddTransactionDialog"></TransactionAddForm>
-    <v-dialog v-model="showUploadDialog">
-      <v-card>
-        <v-card-text>
-
-          <v-select v-model="selectedImportType" :items="importTypes"></v-select>
-          
-                    <v-file-input
-                    v-model="selectedFileUpload"
-                    label="File input"
-                  ></v-file-input>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn @click="showUploadDialog = false">Cancel</v-btn>
-          <v-btn @click="uploadFile">Upload</v-btn>
-
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <FileUploadDialog v-model="showUploadDialog" @close="showUploadDialog = false"></FileUploadDialog>
+    
   </template>
   
   <script setup lang="ts">
@@ -161,11 +145,9 @@ import FileUploadService from '@/data/services/FileUploadService';
   const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();  
   const isLoading = ref(false);
   const noResults = ref(false);
-  const selectedFileUpload = ref<File|null>(null);
-  const importTypes = ['Mint', 'Rocket Money'];
-  const selectedImportType = ref<string>("Mint");
+  
   const showUploadDialog = ref(false);
-  const selectedMonth = ref(1);
+  const selectedMonth = ref(0);
   const categoryStore = useCategoryStore();
 
   let timerId: number | null = null;
@@ -203,24 +185,9 @@ import FileUploadService from '@/data/services/FileUploadService';
   async function getData(): Promise<void> {
     transactions.value = await new TransactionSearchService()
       .withUrlParameters({
-        fromDate: `${selectedYear.value}-${selectedMonth.value.toString().padStart(2, '0')}-01`,
-        toDate: `${selectedYear.value}-${selectedMonth.value.toString().padStart(2, '0')}-30`
+        fromDate: `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-01`,
+        toDate: `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-30`
       }).getMultiple();
-  }
-
-  async function uploadFile(): Promise<void> {
-    if (selectedFileUpload.value === null) return;
-
-    const form = new FormData();
-    form.append('csvFile', selectedFileUpload.value);
-    var importType = selectedImportType.value === 'Mint' ? "0" : "1";
-    try {
-      await new FileUploadService().withRouteParameter(importType).postFile(form);
-
-    } finally {
-      showUploadDialog.value = false;
-
-    }
   }
 
   function searchUpdate(searchString: string): void {

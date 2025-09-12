@@ -1,6 +1,6 @@
 export default interface Category {
     pk: number;
     name: string;
-    isIncome: boolean;
+    reportingType: number;
     type: number;
 }

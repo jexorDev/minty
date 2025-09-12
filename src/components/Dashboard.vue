@@ -66,10 +66,10 @@ import StatisticsService from '@/data/services/StatisticsService';
 
 
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
-const totalExpensesCurrentYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0));
-const totalExpensesPreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
-const totalIncomeCurrentYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0));
-const totalIncomePreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
+const totalExpensesCurrentYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 0 &&  x.reportingType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0));
+const totalExpensesPreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
+const totalIncomeCurrentYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.reportingType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0));
+const totalIncomePreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.reportingType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
 const currentYearChartData = ref<number[]>([]);
 const previousYearChartData = ref<number[]>([]);
 const treemapData = ref<{x: string, y: number}[]>([]);
@@ -164,7 +164,7 @@ function getChartData(year: number) {
   const chartData : number[] = [];
 
   for (var i = 1; i <= 12; i++) {    
-    chartData.push(categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.month <= i && x.year === year).reduce((acc, curr) => { return acc + curr.total}, 0));
+    chartData.push(categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.month <= i && x.year === year).reduce((acc, curr) => { return acc + curr.total}, 0));
   }
   return chartData;
 }
@@ -190,6 +190,6 @@ function getPieChartData(year: number) {
 }
 
 function getCategoryTotal(categoryName: string, year: number) {
-  return categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.categoryName === categoryName && x.year === year).reduce((acc, curr) => {return acc + curr.total}, 0)
+  return categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.categoryName === categoryName && x.year === year).reduce((acc, curr) => {return acc + curr.total}, 0)
 }
 </script>

@@ -32,7 +32,19 @@
                   
   
                 <v-card v-if="selectedCategory">
-                  <v-card-title>Edit Category</v-card-title>
+                  <v-card-title>
+                    <v-row>
+                      <v-col>
+
+                        Edit Category
+                        <v-spacer></v-spacer>
+                        <v-col>
+                          <v-btn @click="showConvertCategoryDialog = true">Convert</v-btn>
+
+                        </v-col>
+                      </v-col>
+                    </v-row>
+                  </v-card-title>
 
                   <v-tabs v-model="selectedCategoryTab">
                     <v-tab value="general">General</v-tab>
@@ -159,6 +171,20 @@
         </v-btn>
       </template>
     </v-snackbar>
+
+    <v-dialog v-model="showConvertCategoryDialog">
+      <v-card>
+        <v-card-title>Convert Category</v-card-title>
+        <v-card-text>
+          Converting all transactions with category {{ selectedCategory?.name }} to:
+          <v-autocomplete v-model="selectedConvertCategory" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="showConvertCategoryDialog = false">Cancel</v-btn>
+          <v-btn @click="convertCategory()">Convert</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
           </v-container>      
 
     </div>
@@ -176,6 +202,8 @@ import MerchantService from '@/data/services/MerchantService';
 import AccountService from '@/data/services/AccountService';
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import TransactionSearchService from '@/data/services/TransactionSearchService';
+import TransactionsService from '@/data/services/TransactionsService';
+import GenericService from '@/data/services/GenericService';
 
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
@@ -185,6 +213,8 @@ const { mobile } = useDisplay()
 
 //const categories = ref<Category[]>([]);
 const selectedCategory = ref<Category | null>(null);
+const selectedConvertCategory = ref<Category | null>(null);
+const showConvertCategoryDialog = ref(false);
 const categoryTypes : {value: number, description: string}[] = [
   {value: 0, description: "Expense"},
   {value: 1, description: "Income"},
@@ -232,6 +262,13 @@ async function saveAccount() {
 
 function getCategoryType(id: number) {
   return categoryTypes.find(x => x.value === id);
+}
+
+async function convertCategory(): Promise<void> {
+  await new GenericService("transactions/convert/category").withUrlParameters({
+    "fromCategory": selectedCategory.value?.pk,
+    "toCategory": selectedConvertCategory.value
+  }).put(null).then(() => showConvertCategoryDialog.value = false);
 }
 
 watch (selectedCategory, () => {

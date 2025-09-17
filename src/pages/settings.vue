@@ -14,7 +14,7 @@
       <v-tabs-window v-model="tab">
         <v-tabs-window-item value="option-1">  
             <v-row>
-              <v-col :cols="4">
+              <v-col :cols="$vuetify.display.mobile ? 12 : 4">
                 <v-list style="height: 97vh; overflow: auto;">
                   <v-list-item v-for="category in categoryStore.categories" @click="selectedCategory = category">
                     <v-list-item-title>
@@ -28,7 +28,7 @@
                     
                 
               </v-col>
-              <v-col :cols="8">
+              <v-col :cols="$vuetify.display.mobile ? 12 : 8">
                   
   
                 <v-card v-if="selectedCategory">
@@ -74,7 +74,7 @@
                         </v-btn-toggle>                   
                       </v-tabs-window-item>
                       <v-tabs-window-item value="transactions">
-                        <v-data-table :items="selectedCategoryTransactions"></v-data-table>
+                        <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="selectedCategoryTransactions"></TransactionsList>
                       </v-tabs-window-item>
                     </v-tabs-window>
   
@@ -172,6 +172,9 @@
       </template>
     </v-snackbar>
 
+    <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
+
+
     <v-dialog v-model="showConvertCategoryDialog">
       <v-card>
         <v-card-title>Convert Category</v-card-title>
@@ -212,6 +215,7 @@ const accountStore = useAccountStore();
 const { mobile } = useDisplay()
 
 //const categories = ref<Category[]>([]);
+const selectedTransaction = ref<TransactionSearch>({} as TransactionSearch);
 const selectedCategory = ref<Category | null>(null);
 const selectedConvertCategory = ref<Category | null>(null);
 const showConvertCategoryDialog = ref(false);
@@ -228,7 +232,8 @@ const categoryReportingTypes : {value: number, description: string}[] = [
 
 const selectedMerchant = ref<Merchant | null>(null);
 const selectedAccount = ref<Account | null>(null);
-
+const tab = ref("option-1");
+const showAddTransactionDialog = ref(false);
 const selectedCategoryTab = ref("general");
 const selectedCategoryTransactions = ref<TransactionSearch[]>([]);
 const snackbar = ref(false);
@@ -284,5 +289,7 @@ watch(selectedCategoryTab, async () => {
   }).getMultiple();
   
 })
-const tab = ref("option-1");
+
+  watch(selectedTransaction, () => showAddTransactionDialog.value = true);
+
 </script>

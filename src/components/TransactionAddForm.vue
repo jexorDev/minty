@@ -1,13 +1,24 @@
 <template>
-<DialogBase model-type="Transaction" :is-new="model.isNew" @save="save">
-  <v-form v-model="valid">
+<v-dialog v-model="show" fullscreen>
+  
+   <v-card>
+            <v-toolbar color="secondary-darken-1" density="compact">
+              <v-toolbar-title>Transaction</v-toolbar-title>
+              <v-toolbar-items>
+                <v-btn
+                icon="mdi-close"                
+                @click="show = false"
+              ></v-btn>
+              </v-toolbar-items>
+            </v-toolbar>
+            <v-form v-model="valid">
       <v-container>
         <v-row>
           <v-col
             cols="12"
             md="3"
           >
-           <v-date-input v-model="transaction.transactionDate"></v-date-input>
+           <v-date-input v-model="fetchedTransaction.transactionDate"></v-date-input>
           </v-col>
   
           <v-col
@@ -15,7 +26,7 @@
             md="6"
           >
             <v-text-field
-              v-model="transaction.description"
+              v-model="fetchedTransaction.description"
               label="Description"
               required
             ></v-text-field>
@@ -27,7 +38,7 @@
             md="3"
           >
             <v-text-field
-              v-model="transaction.amount"
+              v-model="fetchedTransaction.amount"
               label="Amount"
               required
             ></v-text-field>
@@ -36,24 +47,24 @@
         </v-row>
         <v-row>
           <v-col>
-            <v-autocomplete v-model="transaction.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
+            <v-autocomplete v-model="fetchedTransaction.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
           <v-col>
             <v-select label="Subcategory"></v-select>
           </v-col>
           <v-col>
-            <v-autocomplete v-model="transaction.merchantId" label="Merchant" :items="merchantStore.merchants" item-title="name" item-value="pk"></v-autocomplete>
+            <v-autocomplete v-model="fetchedTransaction.merchantId" label="Merchant" :items="merchantStore.merchants" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
         </v-row>
         <v-row>
           <v-col>
-            <v-autocomplete v-model="transaction.accountId" label="Account" :items="accountStore.accounts" item-title="name" item-value="pk"></v-autocomplete>
+            <v-autocomplete v-model="fetchedTransaction.accountId" label="Account" :items="accountStore.accounts" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
         </v-row>
         <v-row>
           <v-col>
             <v-text-field
-              v-model="transaction.notes"
+              v-model="fetchedTransaction.notes"
               label="Notes"
               required
             ></v-text-field>
@@ -73,7 +84,7 @@
             <v-btn @click="addNew()" variant="elevated" color="primary">Add</v-btn>
           </v-col>
         </v-row>
-        <v-row v-for="split of transactionSplits">
+        <v-row v-for="split of fetchedTransactionSplits">
           <v-col>
             <v-select label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
           </v-col>
@@ -84,49 +95,55 @@
             <v-btn @click="deleteSplit(split)" color="secondary">Delete</v-btn>
           </v-col>
         </v-row> 
-        <v-row v-if="transactionSplits.length > 0">
+        <v-row v-if="fetchedTransactionSplits.length > 0">
           <v-col>
             Remaining allocation: {{ remainingSplitAllocation }}
           </v-col>
         </v-row>
       </v-container>
     </v-form>
+          <v-card-actions>
+            <v-btn color="primary" variant="tonal" @click="show = false">Cancel</v-btn>
+            <v-btn color="primary" variant="outlined" text="Save"></v-btn>
+          </v-card-actions>  
+          </v-card>
+  
 
-</DialogBase>
+</v-dialog>
 </template>
 <script setup lang="ts">
-import type Category from '@/data/interfaces/Category';
-import CategoryService from '@/data/services/CategoryService';
-import type TransactionModel from '@/data/classes/TransactionModel';
-import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
-import type ModelList from '@/data/classes/ModelList';
 import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSplit';
 import type Transaction from '@/data/interfaces/Transactions/Transaction';
+import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import TransactionsService from '@/data/services/TransactionsService';
 import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 import {useCategoryStore} from '@/stores/CategoryStore';
 import { useMerchantStore } from '@/stores/MerchantStore';
 import { useAccountStore } from '@/stores/AccountStore';
 
-const model = defineModel<TransactionModel>({required: true});
-const splits = defineModel<ModelList<TransactionSplitModel, TransactionSplit>>("splits");
-const transaction = ref<Transaction>({} as Transaction);
-const transactionSplits = ref<TransactionSplit[]>([] as TransactionSplit[]);
+const show = defineModel<boolean>("show")
+
+const props = defineProps<{
+  transaction: TransactionSearch
+}>();
+
+const fetchedTransaction = ref<Transaction>({} as Transaction);
+const fetchedTransactionSplits = ref<TransactionSplit[]>([] as TransactionSplit[]);
+
 const splitEqually = ref(true);
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
 
+watch(show, async (newValue) => {
+  if (!newValue) return;
 
-  watch(model, async (newValue, oldValue) => {
-    transactionSplits.value = [];
-     if (newValue.pk) {
-      transaction.value = await new TransactionsService().withRouteParameter((newValue.splitId ?? newValue.pk).toString()).getSingle();
-      if (newValue.splitId) {
-        transactionSplits.value = await new TransactionSplitsService(newValue.splitId).getMultiple();
-      }
-    }
-  })
+  fetchedTransaction.value = await new TransactionsService().withRouteParameter((props.transaction.splitId ?? props.transaction.pk).toString()).getSingle();
+        if (props.transaction.splitId) {
+          fetchedTransactionSplits.value = await new TransactionSplitsService(props.transaction.splitId).getMultiple();
+        }
+})
+
 
 function addNew() {
   // if (splits.value !== undefined) {
@@ -136,39 +153,39 @@ function addNew() {
   var amount = 0;
   
   if (splitEqually.value) {
-    const splitCount =  transactionSplits.value.length + 1;
-    var dividedAmount = Math.round(transaction.value!.amount / splitCount * 100) / 100;
-    var roundingError = transaction.value!.amount - (dividedAmount * splitCount);
+    const splitCount =  fetchedTransactionSplits.value.length + 1;
+    var dividedAmount = Math.round(fetchedTransaction.value!.amount / splitCount * 100) / 100;
+    var roundingError = fetchedTransaction.value!.amount - (dividedAmount * splitCount);
 
     amount = dividedAmount + roundingError;
 
-    for (const split of transactionSplits.value) {
+    for (const split of fetchedTransactionSplits.value) {
       split.amount = dividedAmount;
     }
 
   } else {
-    amount = transaction.value!.amount - transactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
+    amount = fetchedTransaction.value!.amount - fetchedTransactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
   }
 
-  transactionSplits.value.push({
+  fetchedTransactionSplits.value.push({
     pk: 0,
-    categoryId: transaction.value.categoryId,
+    categoryId: fetchedTransaction.value.categoryId,
     amount: amount
   } as TransactionSplit);
 }
 
 function deleteSplit(split: TransactionSplit) {
-  transactionSplits.value = transactionSplits.value.filter(t => t !== split);
+  fetchedTransactionSplits.value = fetchedTransactionSplits.value.filter(t => t !== split);
 
-  if (splitEqually.value && transactionSplits.value.length > 0) {
-    const splitCount =  transactionSplits.value.length;
-    var dividedAmount = transaction.value!.amount / splitCount;
-    var roundingError = transaction.value!.amount - (dividedAmount * splitCount);
+  if (splitEqually.value && fetchedTransactionSplits.value.length > 0) {
+    const splitCount =  fetchedTransactionSplits.value.length;
+    var dividedAmount = fetchedTransaction.value!.amount / splitCount;
+    var roundingError = fetchedTransaction.value!.amount - (dividedAmount * splitCount);
 
 
     
 
-    for (const split of transactionSplits.value) {
+    for (const split of fetchedTransactionSplits.value) {
       split.amount = dividedAmount;
     }
 
@@ -176,15 +193,15 @@ function deleteSplit(split: TransactionSplit) {
 }
 
 async function save() {
-  await new TransactionsService().put(transaction.value);
-  await new TransactionSplitsService(transaction.value.pk!).postMultiple(transactionSplits.value);
+  await new TransactionsService().put(fetchedTransaction.value);
+  await new TransactionSplitsService(fetchedTransaction.value.pk!).postMultiple(fetchedTransactionSplits.value);
 }
 
 const remainingSplitAllocation = computed(() => {
-  if (transactionSplits.value.length === 0) {
-    return transaction.value?.amount ?? 0;
+  if (fetchedTransactionSplits.value.length === 0) {
+    return fetchedTransaction.value?.amount ?? 0;
   } else {
-    return (transaction.value?.amount ?? 0)  - transactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
+    return (fetchedTransaction.value?.amount ?? 0)  - fetchedTransactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
   }
 })
 

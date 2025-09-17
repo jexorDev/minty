@@ -1,8 +1,13 @@
 <template>
   <v-main>
+      <v-app-bar v-if="$vuetify.display.mobile" color="primary">
+        <v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+      
+      </v-app-bar>
     <v-navigation-drawer
-        expand-on-hover
-        rail
+    v-model="drawer"
+        :expand-on-hover="!$vuetify.display.mobile"
+        :rail="!$vuetify.display.mobile"
       >
         <v-list>
           <v-list-item
@@ -21,6 +26,9 @@
           <v-list-item prepend-icon="mdi-cog-outline" title="Settings" value="settings" to="/settings"></v-list-item>
         </v-list>
       </v-navigation-drawer>
+
+
+     
     <router-view />
   </v-main>
 
@@ -28,5 +36,9 @@
 </template>
 
 <script lang="ts" setup>
-  //
+import { useDisplay } from 'vuetify';
+
+const { mobile } = useDisplay()
+
+const drawer = ref(!mobile.value);
 </script>

@@ -1,5 +1,5 @@
 export default interface TransactionSearch {
-    pk?: number;
+    pk: number;
     splitId?: number | null;
     transactionDate: Date;
     description: string;

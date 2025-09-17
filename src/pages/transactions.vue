@@ -71,19 +71,8 @@
       </template>
         </v-data-table-virtual> -->
 
-        <v-list>
-          <v-list-item v-for="transaction in transactions" :key="transaction.pk" @click="showAddEditDialog(transaction)">
-            <v-list-item-title>{{ transaction.description }}</v-list-item-title>
-            <v-list-item-subtitle>{{ transaction.categoryName }}</v-list-item-subtitle>
-            <v-list-item-subtitle class="font-italic mt-1">{{ transaction.notes }}</v-list-item-subtitle>
-            <template v-slot:append>
-              <v-list-item-action class="flex-column align-end">
-                <small>{{ formatDate(transaction.transactionDate) }}</small>
-                <div>{{ transaction.amount }}</div>
-              </v-list-item-action>
-            </template>
-          </v-list-item>
-        </v-list>
+        <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="transactions"></TransactionsList>
+       
         <div v-show="isLoading">Loading...</div>
         <div v-show="noResults">No results</div>
 
@@ -102,7 +91,8 @@
         </v-speed-dial>
         </v-fab>
 
-    <TransactionAddForm v-model="transactionModel" v-model:splits="transactionSplitModels" @cancel="showAddTransactionDialog = false" @save="save" :show="showAddTransactionDialog"></TransactionAddForm>
+          <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
+
     <FileUploadDialog v-model="showUploadDialog" @close="showUploadDialog = false"></FileUploadDialog>
     
   </template>
@@ -129,6 +119,7 @@ import FileUploadService from '@/data/services/FileUploadService';
     value: number | string;
   }
   
+  const selectedTransaction = ref<TransactionSearch>({} as TransactionSearch);
   const transactions = ref<TransactionSearch[]>([]);
   const searchItems = ref<Transaction[]>([])
   //const categories = ref<Category[]>([]);
@@ -136,12 +127,12 @@ import FileUploadService from '@/data/services/FileUploadService';
   const fromDate = ref(Date.now().toString())
   const searchString = ref("");
   const showAddTransactionDialog = ref(false);
-  const loading = ref(false);
-  provide('show', showAddTransactionDialog);
-  provide('loading', loading);
+  const loading = ref(false);  
+  //provide('show', show);
+  //provide('loading', loading);
   const selectedYear = ref(2024);
   const years = ref<number[]>([]);
-  const transactionModel = ref<TransactionModel>(new TransactionModel());
+  const transactionModel = ref<TransactionSearch>({} as TransactionSearch);
   const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();  
   const isLoading = ref(false);
   const noResults = ref(false);
@@ -151,6 +142,8 @@ import FileUploadService from '@/data/services/FileUploadService';
   const categoryStore = useCategoryStore();
 
   let timerId: number | null = null;
+
+
   
   const headers = ref([
     {title: 'Date', key: 'transactionDate'},
@@ -209,7 +202,7 @@ import FileUploadService from '@/data/services/FileUploadService';
 
       try {
         isLoading.value = true;
-        transactions.value = await new TransactionsService()
+        transactions.value = await new TransactionSearchService()
         .withUrlParameters({
           searchString: searchString
         }).getMultiple();
@@ -229,18 +222,21 @@ import FileUploadService from '@/data/services/FileUploadService';
 
   watch(selectedYear, async (newValue, oldValue) => {
     await getData();
-  })
+  });
 
   watch(selectedMonth, async (newValue, oldValue) => {
     await getData();
-  })
+  });
+
+  watch(selectedTransaction, () => showAddTransactionDialog.value = true);
 
   async function showAddEditDialog(transaction?: TransactionSearch) {
     
     transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>([]);
 
     if (transaction) {
-      transactionModel.value = new TransactionModel(transaction);
+//      transactionModel.value = new TransactionModel(transaction);
+      transactionModel.value = transaction;
       if (transaction.splitId) {
         var splitModels: TransactionSplitModel[] = [];
 
@@ -259,7 +255,7 @@ import FileUploadService from '@/data/services/FileUploadService';
         
       }
     } else {
-      transactionModel.value = new TransactionModel();
+      transactionModel.value = {} as TransactionSearch;
     }
     showAddTransactionDialog.value = true;
   }  

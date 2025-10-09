@@ -11,8 +11,17 @@
               ></v-btn>
               </v-toolbar-items>
             </v-toolbar>
-            <v-form v-model="valid">
+               <v-tabs
+        v-model="tab"
+        color="primary"
+      >
+        <v-tab prepend-icon="mdi-sitemap-outline" text="General" value="option-1"></v-tab>
+        <v-tab prepend-icon="mdi-point-of-sale" text="Splits" value="option-2"></v-tab>
+      </v-tabs>
+
       <v-container>
+      <v-tabs-window v-model="tab">
+        <v-tabs-window-item value="option-1">
         <v-row>
           <v-col
             cols="12"
@@ -70,7 +79,9 @@
             ></v-text-field>
           </v-col>
         </v-row>
-        <v-row>
+          </v-tabs-window-item>
+          <v-tabs-window-item value="option-2">
+ <v-row>
           <v-col>
             <h1>Splits</h1>
 
@@ -100,8 +111,11 @@
             Remaining allocation: {{ remainingSplitAllocation }}
           </v-col>
         </v-row>
-      </v-container>
-    </v-form>
+          </v-tabs-window-item>
+          </v-tabs-window>
+        </v-container>
+     
+       
           <v-card-actions>
             <v-btn color="primary" variant="tonal" @click="show = false">Cancel</v-btn>
             <v-btn color="primary" variant="outlined" text="Save"></v-btn>
@@ -122,6 +136,7 @@ import { useMerchantStore } from '@/stores/MerchantStore';
 import { useAccountStore } from '@/stores/AccountStore';
 
 const show = defineModel<boolean>("show")
+const tab = ref("option-1");
 
 const props = defineProps<{
   transaction: TransactionSearch

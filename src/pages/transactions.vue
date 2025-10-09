@@ -130,7 +130,7 @@ import FileUploadService from '@/data/services/FileUploadService';
   const loading = ref(false);  
   //provide('show', show);
   //provide('loading', loading);
-  const selectedYear = ref(2024);
+  const selectedYear = ref(dayjs().year());
   const years = ref<number[]>([]);
   const transactionModel = ref<TransactionSearch>({} as TransactionSearch);
   const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();  
@@ -142,26 +142,14 @@ import FileUploadService from '@/data/services/FileUploadService';
   const categoryStore = useCategoryStore();
 
   let timerId: number | null = null;
-
-
-  
-  const headers = ref([
-    {title: 'Date', key: 'transactionDate'},
-    {title: 'Description', key: 'description'},
-    {title: 'Category', key: 'categoryName'},
-    {title: 'Amount', key: 'amount'},
-    {title: 'Actions', key: 'actions'}
-  
-  ]);
   
   onMounted(async () => {
-    for (var year = 2014; year < 2026; year++) {
+    for (var year = 2014; year <= dayjs().year(); year++) {
       years.value.push(year);
     }
     
-    //getData();
+    await getData();
 
-//    categoryStore.categories = await new CategoryService().getMultiple();
   });
 
   function save() {
@@ -176,10 +164,11 @@ import FileUploadService from '@/data/services/FileUploadService';
   }
 
   async function getData(): Promise<void> {
+    const fromDate = `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-01`;
     transactions.value = await new TransactionSearchService()
       .withUrlParameters({
-        fromDate: `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-01`,
-        toDate: `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-30`
+        fromDate: fromDate,
+        toDate: `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-${dayjs(fromDate).daysInMonth()}`
       }).getMultiple();
   }
 

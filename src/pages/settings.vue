@@ -37,11 +37,11 @@
                       <v-col>
 
                         Edit Category
-                        <v-spacer></v-spacer>
+                      </v-col>
+                      <v-spacer></v-spacer>
                         <v-col>
                           <v-btn @click="showConvertCategoryDialog = true">Convert</v-btn>
 
-                        </v-col>
                       </v-col>
                     </v-row>
                   </v-card-title>
@@ -180,7 +180,7 @@
         <v-card-title>Convert Category</v-card-title>
         <v-card-text>
           Converting all transactions with category {{ selectedCategory?.name }} to:
-          <v-autocomplete v-model="selectedConvertCategory" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
+          <v-autocomplete :rules="['required']" v-model="selectedConvertCategory" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
         </v-card-text>
         <v-card-actions>
           <v-btn @click="showConvertCategoryDialog = false">Cancel</v-btn>
@@ -270,6 +270,12 @@ function getCategoryType(id: number) {
 }
 
 async function convertCategory(): Promise<void> {
+  if (!selectedConvertCategory.value) {
+    console.log("please enter a category");
+    
+    return;
+  }
+  
   await new GenericService("transactions/convert/category").withUrlParameters({
     "fromCategory": selectedCategory.value?.pk,
     "toCategory": selectedConvertCategory.value

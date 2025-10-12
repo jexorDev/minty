@@ -118,7 +118,7 @@
        
           <v-card-actions>
             <v-btn color="primary" variant="tonal" @click="show = false">Cancel</v-btn>
-            <v-btn color="primary" variant="outlined" text="Save"></v-btn>
+            <v-btn color="primary" variant="outlined" text="Save" @click="save"></v-btn>
           </v-card-actions>  
           </v-card>
   
@@ -153,9 +153,13 @@ const accountStore = useAccountStore();
 watch(show, async (newValue) => {
   if (!newValue) return;
 
+  tab.value = "option-1";
   fetchedTransaction.value = await new TransactionsService().withRouteParameter((props.transaction.splitId ?? props.transaction.pk).toString()).getSingle();
         if (props.transaction.splitId) {
           fetchedTransactionSplits.value = await new TransactionSplitsService(props.transaction.splitId).getMultiple();
+          if (fetchedTransactionSplits.value.length > 0) {
+            tab.value = "option-2";
+          }
         }
 })
 
@@ -208,8 +212,19 @@ function deleteSplit(split: TransactionSplit) {
 }
 
 async function save() {
-  await new TransactionsService().put(fetchedTransaction.value);
-  await new TransactionSplitsService(fetchedTransaction.value.pk!).postMultiple(fetchedTransactionSplits.value);
+  if (fetchedTransaction.value.pk) {
+    await new TransactionsService().put(fetchedTransaction.value);
+    if (fetchedTransactionSplits.value.length > 0) {
+      await new TransactionSplitsService(fetchedTransaction.value.pk!).postMultiple(fetchedTransactionSplits.value);
+    }
+  } else {
+    const pk = await new TransactionsService().post(fetchedTransaction.value);
+    if (fetchedTransactionSplits.value.length > 0) {
+      await new TransactionSplitsService(pk).postMultiple(fetchedTransactionSplits.value);
+    }
+  }
+
+  show.value = false;
 }
 
 const remainingSplitAllocation = computed(() => {

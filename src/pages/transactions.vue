@@ -83,7 +83,7 @@
             File
           </v-btn>
 
-          <v-btn key="2" color="primary" @click="showAddEditDialog">
+          <v-btn key="2" color="primary" @click="showAddEditDialog()">
             Single
           </v-btn>
 
@@ -91,7 +91,7 @@
         </v-speed-dial>
         </v-fab>
 
-          <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
+          <TransactionAddForm :key="addFormKey" :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
 
     <FileUploadDialog v-model="showUploadDialog" @close="showUploadDialog = false"></FileUploadDialog>
     
@@ -140,6 +140,8 @@ import FileUploadService from '@/data/services/FileUploadService';
   const showUploadDialog = ref(false);
   const selectedMonth = ref(0);
   const categoryStore = useCategoryStore();
+
+  const addFormKey = ref(1);
 
   let timerId: number | null = null;
   
@@ -222,7 +224,7 @@ import FileUploadService from '@/data/services/FileUploadService';
   async function showAddEditDialog(transaction?: TransactionSearch) {
     
     transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>([]);
-
+    
     if (transaction) {
 //      transactionModel.value = new TransactionModel(transaction);
       transactionModel.value = transaction;
@@ -246,6 +248,8 @@ import FileUploadService from '@/data/services/FileUploadService';
     } else {
       transactionModel.value = {} as TransactionSearch;
     }
+
+    addFormKey.value += 1;
     showAddTransactionDialog.value = true;
   }  
   

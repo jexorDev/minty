@@ -29,9 +29,9 @@ export default abstract class BaseService<T> {
         return (res.data as T[]);
     }
 
-    async post(data: T): Promise<T> {
+    async post(data: T): Promise<number> {
         const res = await axios.post(this.url, data);
-        return res.data as T;
+        return res.data as number;
     }
 
     async postMultiple(data: T[]): Promise<T[]> {

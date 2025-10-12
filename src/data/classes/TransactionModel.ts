@@ -15,9 +15,7 @@ export default class TransactionModel extends BaseModel<Transaction> {
         }     
     }   
     
-    get splitId() {
-        return this.model.splitId;
-    }
+
 
     get transactionDate() {
         return this.model.transactionDate;
@@ -47,12 +45,7 @@ export default class TransactionModel extends BaseModel<Transaction> {
         this.model.amount = value;
     }   
 
-    get exclude() {
-        return this.model.exclude;
-    }
-    set exclude(value) {
-        this.model.exclude = value;
-    }   
+  
 
     get categoryId() {
         return this.model.categoryId;

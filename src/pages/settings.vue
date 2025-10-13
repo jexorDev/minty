@@ -49,6 +49,7 @@
                   <v-tabs v-model="selectedCategoryTab">
                     <v-tab value="general">General</v-tab>
                     <v-tab value="transactions">Transactions</v-tab>
+                    <v-tab value="rules">Rules</v-tab>
                   </v-tabs>
 
                   <v-card-text>
@@ -75,6 +76,9 @@
                       </v-tabs-window-item>
                       <v-tabs-window-item value="transactions">
                         <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="selectedCategoryTransactions"></TransactionsList>
+                      </v-tabs-window-item>
+                      <v-tabs-window-item value="rules">
+                        <v-data-table :items="selectedCategoryRules"></v-data-table>
                       </v-tabs-window-item>
                     </v-tabs-window>
   
@@ -207,6 +211,8 @@ import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSe
 import TransactionSearchService from '@/data/services/TransactionSearchService';
 import TransactionsService from '@/data/services/TransactionsService';
 import GenericService from '@/data/services/GenericService';
+import type CategoryRule from '@/data/interfaces/CategoryRule';
+import CategoryRuleService from '@/data/services/CategoryRuleService';
 
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
@@ -236,6 +242,7 @@ const tab = ref("option-1");
 const showAddTransactionDialog = ref(false);
 const selectedCategoryTab = ref("general");
 const selectedCategoryTransactions = ref<TransactionSearch[]>([]);
+const selectedCategoryRules = ref<CategoryRule[]>([]);
 const snackbar = ref(false);
 const snackbarText = ref("");
 
@@ -287,12 +294,15 @@ watch (selectedCategory, () => {
 })
 
 watch(selectedCategoryTab, async () => {
-  if (selectedCategoryTab.value !== "transactions") return;
+  if (selectedCategoryTab.value === "transactions") {
+    selectedCategoryTransactions.value = await new TransactionSearchService()
+    .withUrlParameters({
+      "categoryId": selectedCategory.value?.pk
+    }).getMultiple();
+  } else if (selectedCategoryTab.value === "rules") {
+    selectedCategoryRules.value = await new CategoryRuleService(selectedCategory.value!.pk).getMultiple();
+  }
 
-  selectedCategoryTransactions.value = await new TransactionSearchService()
-  .withUrlParameters({
-    "categoryId": selectedCategory.value?.pk
-  }).getMultiple();
   
 })
 

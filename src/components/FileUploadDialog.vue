@@ -81,7 +81,7 @@ const errorMessage = ref("");
 
 const loading = ref(false);
   const selectedFileUpload = ref<File|null>(null);
-const importTypes = ['Mint', 'Rocket Money'];
+const importTypes = ['Mint', 'Rocket Money', 'Bank of America'];
   const selectedImportType = ref<string>("Mint");
 
 async function parseFile(): Promise<void> {
@@ -91,7 +91,7 @@ async function parseFile(): Promise<void> {
     const form = new FormData();
     form.append('csvFile', selectedFileUpload.value);
     
-    var importType = selectedImportType.value === 'Mint' ? "0" : "1";
+    var importType = importTypes.indexOf(selectedImportType.value);
 
     try {
         loading.value = true;
@@ -112,7 +112,8 @@ async function parseFile(): Promise<void> {
 
     const form = new FormData();
     form.append('csvFile', selectedFileUpload.value);
-    var importType = selectedImportType.value === 'Mint' ? "0" : "1";
+    var importType = importTypes.indexOf(selectedImportType.value);
+    
     try {
         loading.value = true;
         const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/files/${importType}`, form, { headers: {"Content-Type": "multipart/form-data"}});

@@ -1,5 +1,4 @@
 <template>  
-  <router-link to="/transactions">Transactions</router-link>
   <v-row>
     <v-col>
       <v-card>
@@ -90,11 +89,14 @@ const chartOptions = {
               type: 'area',
               zoom: {
                 enabled: false
-              }
+              },
+              
             },
+            colors: ['#50C878', '#6C3BAA'],
             theme: {
               mode: 'dark'
             },
+            
             dataLabels: {
               enabled: false
             },
@@ -117,6 +119,7 @@ const categoryTreemapChartOptions = {
               height: 350,
               type: 'treemap',
             },
+            colors: ['#50C878', '#6C3BAA'],
               theme: {
               mode: 'dark'
             },
@@ -132,6 +135,7 @@ const pieChartOptions = {
               width: 380,
               type: 'donut',
             },
+            colors: ['#50C878', '#6C3BAA', '#2196F3', '#B00020'],
               theme: {
               mode: 'dark'
             },

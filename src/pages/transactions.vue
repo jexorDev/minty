@@ -138,7 +138,7 @@ import FileUploadService from '@/data/services/FileUploadService';
   const noResults = ref(false);
   
   const showUploadDialog = ref(false);
-  const selectedMonth = ref(0);
+  const selectedMonth = ref(dayjs().month());
   const categoryStore = useCategoryStore();
 
   const addFormKey = ref(1);

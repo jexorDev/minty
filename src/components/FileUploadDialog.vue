@@ -33,7 +33,7 @@
 
     </v-col>
     <v-col>
-        <v-btn @click="parseFile">Submit</v-btn>
+        <v-btn @click="parseFile" :loading="loading">Submit</v-btn>
     </v-col>
 </v-row>
 <v-row>
@@ -44,7 +44,7 @@
                     <v-alert v-if="parsedTransactions.length > 0" color="info" title="Take a look">
 
                         Does the following look right?
-                        <v-btn @click="uploadFile" variant="text">Yes, complete uploading file</v-btn>
+                        <v-btn @click="uploadFile" variant="text" :loading="loading">Yes, complete uploading file</v-btn>
                     </v-alert>
     <v-data-table :items="parsedTransactions"></v-data-table>
 </v-col>

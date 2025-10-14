@@ -160,6 +160,8 @@ watch(show, async (newValue) => {
           if (fetchedTransactionSplits.value.length > 0) {
             tab.value = "option-2";
           }
+        } else {
+          fetchedTransactionSplits.value = [];
         }
 })
 
@@ -214,14 +216,12 @@ function deleteSplit(split: TransactionSplit) {
 async function save() {
   if (fetchedTransaction.value.pk) {
     await new TransactionsService().put(fetchedTransaction.value);
-    if (fetchedTransactionSplits.value.length > 0) {
-      await new TransactionSplitsService(fetchedTransaction.value.pk!).postMultiple(fetchedTransactionSplits.value);
-    }
+    await new TransactionSplitsService(fetchedTransaction.value.pk!).postMultiple(fetchedTransactionSplits.value);
   } else {
     const pk = await new TransactionsService().post(fetchedTransaction.value);
     if (fetchedTransactionSplits.value.length > 0) {
       await new TransactionSplitsService(pk).postMultiple(fetchedTransactionSplits.value);
-    }
+    } 
   }
 
   show.value = false;

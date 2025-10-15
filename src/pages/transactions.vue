@@ -80,7 +80,7 @@
               <apexchart  :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
             </v-card>
             <v-card>
-              <v-data-table :items="tableData"></v-data-table>
+              <v-data-table :items="tableData" :headers="headers"></v-data-table>
             </v-card>
           </v-col>
         </v-row>
@@ -287,6 +287,11 @@ import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposabl
       return [];
     }
   });
+
+  const headers = [
+  { title: 'Category', value: 'x' },
+  { title: 'Total', key: 'y' }  
+]
   
   const transactionDescriptions = computed<string[]>(() => [...new Set(transactions.value.map(x => x.description))]);
   const autoCompleteObjects = computed<AutoCompleteObject[]>(() => [...categoryStore.categories.map(x => {

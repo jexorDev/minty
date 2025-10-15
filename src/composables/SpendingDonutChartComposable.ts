@@ -20,7 +20,7 @@ function getChartData(data: CategoryMonthTotal[], year: number) {
     chartData.push({x: category, y: getCategoryTotal(data, category, year)});
   }
 
-  return chartData.sort((a, b) => {return a.y - b.y});
+  return chartData.sort((a, b) => {return b.y - a.y});
 }
 
 function getCategoryTotal(data: CategoryMonthTotal[], categoryName: string, year: number) {

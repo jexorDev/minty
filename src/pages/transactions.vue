@@ -70,8 +70,20 @@
         </div>
       </template>
         </v-data-table-virtual> -->
+        <v-row>
+          <v-col :cols="8">
+            <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="transactions"></TransactionsList>
 
-        <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="transactions"></TransactionsList>
+          </v-col>
+           <v-col :cols="4">
+            <v-card>
+              <apexchart  :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
+            </v-card>
+            <v-card>
+              <v-data-table :items="tableData"></v-data-table>
+            </v-card>
+          </v-col>
+        </v-row>
        
         <div v-show="isLoading">Loading...</div>
         <div v-show="noResults">No results</div>
@@ -113,12 +125,17 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 import TransactionSearchService from '@/data/services/TransactionSearchService';
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import FileUploadService from '@/data/services/FileUploadService';
+import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthTotal';
+import StatisticsService from '@/data/services/StatisticsService';
+import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposable';
+
   interface AutoCompleteObject {
     type: string;
     text: string;
     value: number | string;
   }
   
+  const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
   const selectedTransaction = ref<TransactionSearch>({} as TransactionSearch);
   const transactions = ref<TransactionSearch[]>([]);
   const searchItems = ref<Transaction[]>([])
@@ -143,6 +160,8 @@ import FileUploadService from '@/data/services/FileUploadService';
 
   const addFormKey = ref(1);
 
+  const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedYear.value);
+  
   let timerId: number | null = null;
   
   onMounted(async () => {
@@ -167,11 +186,18 @@ import FileUploadService from '@/data/services/FileUploadService';
 
   async function getData(): Promise<void> {
     const fromDate = `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-01`;
+    const toDate = `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-${dayjs(fromDate).daysInMonth()}`;
+
     transactions.value = await new TransactionSearchService()
       .withUrlParameters({
         fromDate: fromDate,
-        toDate: `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-${dayjs(fromDate).daysInMonth()}`
+        toDate: toDate
       }).getMultiple();
+
+        categoryMonthTotals.value = await new StatisticsService().withUrlParameters({
+    "fromDate": fromDate,
+    "toDate": toDate
+  }).getMultiple();
   }
 
   function searchUpdate(searchString: string): void {
@@ -252,6 +278,15 @@ import FileUploadService from '@/data/services/FileUploadService';
     addFormKey.value += 1;
     showAddTransactionDialog.value = true;
   }  
+
+  const tableData = computed(() => {
+    if (spendingDonutChartSeries.value.length > 0) {
+      return spendingDonutChartSeries.value[0].data;
+
+    } else {
+      return [];
+    }
+  });
   
   const transactionDescriptions = computed<string[]>(() => [...new Set(transactions.value.map(x => x.description))]);
   const autoCompleteObjects = computed<AutoCompleteObject[]>(() => [...categoryStore.categories.map(x => {

@@ -35,11 +35,14 @@
               
             </v-row>
             <v-row no-gutters>
-              <v-col>
+              <v-col md="1">
                <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact" max-width="200"></v-select>
              </v-col> 
-             <v-col>
-              <v-chip-group v-model="selectedMonth" selected-class="v-chip--selected v-chip--variant-flat" mandatory>
+             <v-col md="5">
+              <v-chip-group 
+              v-model="selectedMonth" 
+              color="primary"              
+              mandatory>
                 <v-chip >Jan</v-chip>
                 <v-chip >Feb</v-chip>
                 <v-chip >Mar</v-chip>
@@ -55,7 +58,22 @@
                 
               </v-chip-group>
              </v-col>              
-              
+              <v-col md="4">
+                 <v-btn-toggle
+                    v-model="reportingType"
+                    base-color="secondary"
+                    color="primary"
+                    divided
+                    density="compact"
+                  >
+                  <v-btn text="Always include"></v-btn>
+                  <v-btn text="Exclude by default"></v-btn>
+                  <v-btn text="Always exclude"></v-btn>
+                </v-btn-toggle>
+              </v-col>
+              <v-col col="2">
+                <v-autocomplete clearable v-model="filterCategoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
+              </v-col>
             </v-row>
 
           </v-card-text>
@@ -71,11 +89,11 @@
       </template>
         </v-data-table-virtual> -->
         <v-row>
-          <v-col :cols="8">
-            <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="transactions"></TransactionsList>
+          <v-col :cols="$vuetify.display.mobile ? 12 : 8">
+            <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="filteredTransactions"></TransactionsList>
 
           </v-col>
-           <v-col :cols="4">
+           <v-col v-if="!$vuetify.display.mobile" :cols="4">
             <v-card>
               <apexchart  :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
             </v-card>
@@ -128,6 +146,7 @@ import FileUploadService from '@/data/services/FileUploadService';
 import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthTotal';
 import StatisticsService from '@/data/services/StatisticsService';
 import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposable';
+import { useDisplay } from 'vuetify';
 
   interface AutoCompleteObject {
     type: string;
@@ -157,8 +176,11 @@ import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposabl
   const showUploadDialog = ref(false);
   const selectedMonth = ref(dayjs().month());
   const categoryStore = useCategoryStore();
+  const { mobile } = useDisplay()
 
   const addFormKey = ref(1);
+  const reportingType = ref<number | undefined>(undefined);
+  const filterCategoryId = ref<number | null>(null);
 
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedYear.value);
   
@@ -232,6 +254,10 @@ import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposabl
       }, 1000); 
       
   }
+
+  const filteredTransactions = computed(() => transactions.value
+    .filter(x => reportingType.value === undefined || x.categoryReportingType === reportingType.value)
+    .filter(x => filterCategoryId.value === null || x.categoryId === filterCategoryId.value));
 
   function formatDate(date: string | Date): string {
     return dayjs(date).format("MM/DD/YYYY")

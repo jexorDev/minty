@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosHeaderValue } from 'axios';
 import qs from 'qs';
 
 export default abstract class BaseService<T> {
@@ -6,9 +6,17 @@ export default abstract class BaseService<T> {
     private routeParameter: string = "";
     private urlParameters: string = "";
     private headers: {headerName: string, headerValue: any}[] = [];
+    private axiosInstance = axios.create();
 
     constructor(urlPath: string) {
         this.urlPath = urlPath;
+        const authToken = localStorage.getItem('authToken');
+        if (authToken) {
+            this.axiosInstance.interceptors.request.use(function (config) {    
+                config.headers.Authorization = `Bearer ${authToken}`
+                return config;
+            });
+        }
     }
 
     protected get url(): string {
@@ -16,31 +24,31 @@ export default abstract class BaseService<T> {
     }
 
     async getSingle(): Promise<T> {        
-        const res = await axios.get(this.url, {
+        const res = await this.axiosInstance.get(this.url, {
             params: qs.stringify(this.urlParameters)
         });
         return (res.data as T);
     }
 
     async getMultiple(): Promise<T[]> {
-        const res = await axios.get(this.url, {
+        const res = await this.axiosInstance.get(this.url, {
             params: qs.stringify(this.urlParameters)
         });
         return (res.data as T[]);
     }
 
     async post(data: T): Promise<number> {
-        const res = await axios.post(this.url, data);
+        const res = await this.axiosInstance.post(this.url, data);
         return res.data as number;
     }
 
     async postMultiple(data: T[]): Promise<T[]> {
-        const res = await axios.post(this.url, data);
+        const res = await this.axiosInstance.post(this.url, data);
         return res.data as T[];
     }
 
     async put(data: T): Promise<T> {
-        const res = await axios.put(this.url, data);
+        const res = await this.axiosInstance.put(this.url, data);
         return res.data as T;
     }
 
@@ -57,5 +65,5 @@ export default abstract class BaseService<T> {
     withHeaders(headers: {headerName: string, headerValue: any}[]): this {
         this.headers = headers;
         return this;
-    }
+    }    
 }

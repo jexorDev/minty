@@ -1,5 +1,5 @@
 <template>
-       <div :class="mobile ? '' : 'd-flex flex-row'">
+  <div :class="mobile ? '' : 'd-flex flex-row'">
    <v-tabs
         v-model="tab"
         color="primary"
@@ -31,19 +31,9 @@
               <v-col :cols="$vuetify.display.mobile ? 12 : 8">
                   
   
-                <v-card v-if="selectedCategory">
+                <v-card v-if="selectedCategory" color="secondary-darken-1">
                   <v-card-title>
-                    <v-row>
-                      <v-col>
-
-                        Edit Category
-                      </v-col>
-                      <v-spacer></v-spacer>
-                        <v-col>
-                          <v-btn @click="showConvertCategoryDialog = true">Convert</v-btn>
-
-                      </v-col>
-                    </v-row>
+                    Edit Category
                   </v-card-title>
 
                   <v-tabs v-model="selectedCategoryTab">
@@ -59,7 +49,11 @@
                         <v-text-field v-model="selectedCategory.name"></v-text-field> 
     
                         <div class="text-overline">Type</div>
-                        <v-btn-toggle v-model="selectedCategory.type" mandatory>
+                        <v-btn-toggle 
+                        v-model="selectedCategory.type" 
+                         base-color="secondary"
+                        color="primary"
+                        mandatory>
                           <v-btn>Expense</v-btn>
                           <v-btn>Income</v-btn> 
                           <v-btn>Transfer</v-btn>                     
@@ -67,7 +61,11 @@
                         </v-btn-toggle>
     
                         <div class="text-overline">Statistics</div>
-                        <v-btn-toggle v-model="selectedCategory.reportingType" mandatory>
+                        <v-btn-toggle 
+                        v-model="selectedCategory.reportingType" 
+                         base-color="secondary"
+                        color="primary"
+                        mandatory>
                           <v-btn>Always Include</v-btn>
                           <v-btn>Exclude by Default</v-btn>
                           <v-btn>Always Exclude</v-btn>
@@ -80,12 +78,14 @@
                       <v-tabs-window-item value="rules">
                         <v-data-table :items="selectedCategoryRules"></v-data-table>
                       </v-tabs-window-item>
-                    </v-tabs-window>
-  
+                    </v-tabs-window> 
                     
                   </v-card-text>
                   <v-card-actions>
-                    <v-btn @click="saveCategory()">Save</v-btn>
+                    <v-btn color="primary-darken-1">Delete</v-btn>
+                    <v-btn variant="outlined" color="primary-darken-1" append-icon="mdi-source-merge" @click="showConvertCategoryDialog = true">Merge</v-btn>
+                    <v-spacer></v-spacer>
+                    <v-btn variant="tonal" color="primary-darken-1" @click="saveCategory()">Save</v-btn>
                   </v-card-actions>
                 </v-card>
               </v-col>
@@ -181,20 +181,28 @@
 
     <v-dialog v-model="showConvertCategoryDialog">
       <v-card>
-        <v-card-title>Convert Category</v-card-title>
+        <v-card-title>Merge Category</v-card-title>
         <v-card-text>
-          Converting all transactions with category {{ selectedCategory?.name }} to:
-          <v-autocomplete :rules="['required']" v-model="selectedConvertCategory" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
+          <v-row>
+            <v-col>
+              Merging all transactions with category {{ selectedCategory?.name }} into:
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-autocomplete :rules="['required']" v-model="selectedConvertCategory" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
+            </v-col>
+          </v-row>
         </v-card-text>
-        <v-card-actions>
+        <v-card-actions>          
           <v-btn @click="showConvertCategoryDialog = false">Cancel</v-btn>
-          <v-btn @click="convertCategory()">Convert</v-btn>
+          <v-btn @click="convertCategory()">Merge</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-          </v-container>      
+  </v-container>      
 
-    </div>
+  </div>
 </template>
 <script setup lang="ts">
 import type Category from '@/data/interfaces/Category';
@@ -286,7 +294,12 @@ async function convertCategory(): Promise<void> {
   await new GenericService("transactions/convert/category").withUrlParameters({
     "fromCategory": selectedCategory.value?.pk,
     "toCategory": selectedConvertCategory.value
-  }).put(null).then(() => showConvertCategoryDialog.value = false);
+  }).put(null).then(async () =>
+  { 
+    selectedCategory.value = null;
+    categoryStore.categories = await new CategoryService().getMultiple();
+    showConvertCategoryDialog.value = false
+  });
 }
 
 watch (selectedCategory, () => {

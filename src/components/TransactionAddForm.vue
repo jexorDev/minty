@@ -19,7 +19,7 @@
         <v-tab prepend-icon="mdi-point-of-sale" text="Splits" value="option-2"></v-tab>
       </v-tabs>
 
-      <v-container>
+      <v-container fluid>
       <v-tabs-window v-model="tab">
         <v-tabs-window-item value="option-1">
         <v-row>
@@ -81,36 +81,46 @@
         </v-row>
           </v-tabs-window-item>
           <v-tabs-window-item value="option-2">
- <v-row>
-          <v-col>
-            <h1>Splits</h1>
+            <div class="d-flex">
+              <v-btn @click="addNew()" variant="elevated" color="primary" class="ml-2 mt-2">Add Split</v-btn>
+              <v-checkbox v-model="splitEqually" label="Split Equally" ></v-checkbox>
 
-          </v-col>
-          <v-col>
-
-            <v-checkbox v-model="splitEqually">Split Equally</v-checkbox>
-          </v-col>
-          <v-col>
-
-            <v-btn @click="addNew()" variant="elevated" color="primary">Add</v-btn>
-          </v-col>
-        </v-row>
-        <v-row v-for="split of fetchedTransactionSplits">
-          <v-col>
-            <v-select label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
-          </v-col>
-          <v-col>
-            <v-text-field v-model="split.amount"></v-text-field>
-          </v-col>
-          <v-col>
-            <v-btn @click="deleteSplit(split)" color="secondary">Delete</v-btn>
-          </v-col>
-        </v-row> 
-        <v-row v-if="fetchedTransactionSplits.length > 0">
-          <v-col>
-            Remaining allocation: {{ remainingSplitAllocation }}
-          </v-col>
-        </v-row>
+            </div>
+            
+            <v-row>
+              <v-col>             
+                <v-row v-for="split of fetchedTransactionSplits">
+                  <v-col>
+                    <v-select label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
+                  </v-col>
+                  <v-col>
+                    <v-text-field v-model="split.amount"></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-btn @click="deleteSplit(split)" color="secondary" class="mt-3">Delete</v-btn>
+                  </v-col>
+                </v-row> 
+              </v-col>
+              <v-col cols="3">
+                <v-card>
+                  <v-card-text>
+                    <v-list>
+                      <v-list-item>
+                        <v-list-item-title>Transaction Total</v-list-item-title>
+                        <v-list-item-subtitle>{{ fetchedTransaction.amount }}</v-list-item-subtitle>
+                      </v-list-item>
+                      <v-list-item>
+                        <v-list-item-title>Remaining Allocation</v-list-item-title>
+                        <v-list-item-subtitle>{{ remainingSplitAllocation }}</v-list-item-subtitle>
+                      </v-list-item>
+                    </v-list>
+                      
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+ 
+      
           </v-tabs-window-item>
           </v-tabs-window>
         </v-container>
@@ -120,7 +130,7 @@
             <v-btn color="primary" variant="tonal" @click="show = false">Cancel</v-btn>
             <v-btn color="primary" variant="outlined" text="Save" @click="save"></v-btn>
           </v-card-actions>  
-          </v-card>
+      </v-card>
   
 
 </v-dialog>
@@ -185,13 +195,13 @@ function addNew() {
     }
 
   } else {
-    amount = fetchedTransaction.value!.amount - fetchedTransactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
+    amount = fetchedTransaction.value!.amount - currentSplitAllocation.value;
   }
 
   fetchedTransactionSplits.value.push({
     pk: 0,
     categoryId: fetchedTransaction.value.categoryId,
-    amount: amount
+    amount: Math.round(amount * 100 ) / 100
   } as TransactionSplit);
 }
 
@@ -227,11 +237,15 @@ async function save() {
   show.value = false;
 }
 
+const currentSplitAllocation = computed(() => {
+  return fetchedTransactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
+});
+
 const remainingSplitAllocation = computed(() => {
   if (fetchedTransactionSplits.value.length === 0) {
     return fetchedTransaction.value?.amount ?? 0;
   } else {
-    return (fetchedTransaction.value?.amount ?? 0)  - fetchedTransactionSplits.value.reduce((acc, x) => {return acc + Number(x.amount)}, 0);
+    return Math.round(((fetchedTransaction.value?.amount ?? 0)  - currentSplitAllocation.value) * 100) / 100;
   }
 })
 

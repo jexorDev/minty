@@ -1,18 +1,9 @@
 <template>
-        <v-card color="secondary-darken-1">
-            <v-card-text>
-                <v-row>
-                    <v-col>
-                            <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact" max-width="200"></v-select>
-        
-                        </v-col>
-                        <v-col col="2">
-                            <v-autocomplete clearable v-model="filterCategoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
-                        </v-col>
-                    </v-row>
-                    
-                </v-card-text>
-            </v-card>
+        <v-toolbar color="secondary-darken-1">
+            <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact" max-width="200" class="mx-5 mt-5"></v-select>
+            <v-autocomplete clearable density="compact" variant="outlined" v-model="filterCategoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk" max-width="300" class="mt-5"></v-autocomplete>
+            
+        </v-toolbar>
         
         <v-row>
             <v-col cols="8">

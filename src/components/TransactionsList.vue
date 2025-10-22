@@ -1,6 +1,9 @@
 <template>
         <v-list>
-          <v-list-item v-for="transaction in props.transactions" :key="transaction.pk" @click="selectedTransaction = transaction">
+          <v-list-item v-for="transaction in props.transactions" :key="transaction.pk" @click="selectedTransaction = transaction" append-icon="mdi-source-fork">
+            <template v-slot:prepend>
+              <v-icon v-if="transaction.splitId" icon="mdi-source-fork"></v-icon>
+            </template>
             <v-list-item-title>{{ transaction.description }}</v-list-item-title>
             <v-list-item-subtitle>{{ transaction.categoryName }}</v-list-item-subtitle>
             <v-list-item-subtitle class="font-italic mt-1">{{ transaction.notes }}</v-list-item-subtitle>
@@ -24,11 +27,8 @@ const props = defineProps<{
 }>();
 
 
-  function formatDate(date: string | Date): string {
-    return dayjs(date).format("MM/DD/YYYY")
-  }
-
-async function save() {
-
+function formatDate(date: string | Date): string {
+  return dayjs(date).format("MM/DD/YYYY")
 }
+
 </script>

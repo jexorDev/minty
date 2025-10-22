@@ -16,32 +16,17 @@
                   ></v-list-item>
                 </template>
         </v-autocomplete> -->
-        <v-card color="secondary-darken-1">
-          <v-card-text>
-            <v-row no-gutters>
-              <v-col>
-                <!-- <v-autocomplete :search="searchString" @update:search="searchUpdate" :items="searchItems" item-title="description" density="compact" no-filter>
-                  <template v-slot:item="{props, item}">
-                    <v-list-item
-                      v-bind="props"                      
-                      @click="showAddEditDialog(item.raw)">                      
-                      <v-list-item-subtitle>{{ item.raw.categoryName }} | {{ item.raw.transactionDate }}</v-list-item-subtitle>
-                      <v-list-item-subtitle>{{ item.raw.notes }}</v-list-item-subtitle>
-                    </v-list-item>
-                  </template>
-                </v-autocomplete> -->
-                <v-text-field label="Quick Search" @update:model-value="searchUpdate" clearable></v-text-field>
-              </v-col>
-              
-            </v-row>
-            <v-row no-gutters>
-              <v-col md="1">
-               <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact" max-width="200"></v-select>
-             </v-col> 
-             <v-col md="5">
-              <v-chip-group 
+        <v-toolbar color="secondary-darken-1">
+
+          <v-text-field variant="outlined" density="compact" class="ml-5 mt-5" label="Quick Search" @update:model-value="searchUpdate" clearable></v-text-field>
+
+
+          <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact" max-width="200" class="ml-5 mt-5"></v-select>
+
+          <v-chip-group 
               v-model="selectedMonth" 
-              color="primary"              
+              color="primary"  
+              class="ml-5"              
               mandatory>
                 <v-chip >Jan</v-chip>
                 <v-chip >Feb</v-chip>
@@ -56,10 +41,8 @@
                 <v-chip >Nov</v-chip>
                 <v-chip >Dec</v-chip>
                 
-              </v-chip-group>
-             </v-col>              
-              <v-col md="4">
-                 <v-btn-toggle
+            </v-chip-group>
+            <v-btn-toggle
                     v-model="reportingType"
                     base-color="secondary"
                     color="primary"
@@ -70,15 +53,9 @@
                   <v-btn text="Exclude by default"></v-btn>
                   <v-btn text="Always exclude"></v-btn>
                 </v-btn-toggle>
-              </v-col>
-              <v-col col="2">
-                <v-autocomplete clearable v-model="filterCategoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
-              </v-col>
-            </v-row>
+            <v-autocomplete clearable v-model="filterCategoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined" density="compact" class="ml-5 mt-5"></v-autocomplete>
 
-          </v-card-text>
-
-        </v-card>
+        </v-toolbar>
 <!--         <v-data-table-virtual :headers="headers" :items="transactions" fixed-header>
           <template v-slot:item.actions="{ item }">
         <div class="d-flex ga-2 justify-end">
@@ -121,7 +98,7 @@
         </v-speed-dial>
         </v-fab>
 
-          <TransactionAddForm :key="addFormKey" :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
+    <TransactionAddForm :key="addFormKey" :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
 
     <FileUploadDialog v-model="showUploadDialog" @close="showUploadDialog = false"></FileUploadDialog>
     

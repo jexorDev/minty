@@ -228,9 +228,9 @@ async function save() {
     await new TransactionsService().put(fetchedTransaction.value);
     await new TransactionSplitsService(fetchedTransaction.value.pk!).postMultiple(fetchedTransactionSplits.value);
   } else {
-    const pk = await new TransactionsService().post(fetchedTransaction.value);
+    const persistedTransaction = await new TransactionsService().post(fetchedTransaction.value);
     if (fetchedTransactionSplits.value.length > 0) {
-      await new TransactionSplitsService(pk).postMultiple(fetchedTransactionSplits.value);
+      await new TransactionSplitsService(persistedTransaction.pk!).postMultiple(fetchedTransactionSplits.value);
     } 
   }
 

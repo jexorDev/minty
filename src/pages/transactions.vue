@@ -297,19 +297,19 @@ import { useDisplay } from 'vuetify';
 ]
   
   const transactionDescriptions = computed<string[]>(() => [...new Set(transactions.value.map(x => x.description))]);
-  const autoCompleteObjects = computed<AutoCompleteObject[]>(() => [...categoryStore.categories.map(x => {
-    return {
-      type: "Category",
-      text: x.name,
-      value: x.pk
-    }
-  }), ...transactionDescriptions.value.map(x => {
-    return {
-      type: "",
-      text: x,
-      value: x
-    }
-  } )]);
+  // const autoCompleteObjects = computed<AutoCompleteObject[]>(() => [...categoryStore.categories.map(x => {
+  //   return {
+  //     type: "Category",
+  //     text: x.name,
+  //     value: x.pk
+  //   }
+  // }), ...transactionDescriptions.value.map(x => {
+  //   return {
+  //     type: "",
+  //     text: x,
+  //     value: x
+  //   }
+  // } )]);
 
   </script>
   

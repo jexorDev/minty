@@ -1,5 +1,5 @@
 export default interface Category {
-    pk: number;
+    pk: number | null;
     name: string;
     reportingType: number;
     type: number;

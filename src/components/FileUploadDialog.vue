@@ -61,8 +61,7 @@
 
   </template>
   <script setup lang="ts">
-import FileUploadService from '@/data/services/FileUploadService';
-import axios from 'axios';
+import GenericService from '@/data/services/GenericService';
 
 interface FileTransaction {
     date: Date;
@@ -95,12 +94,7 @@ async function parseFile(): Promise<void> {
 
     try {
         loading.value = true;
-         await axios.post(`${import.meta.env.VITE_API_BASE_URL}/files/${importType}/pre`, form, { headers: {"Content-Type": "multipart/form-data"}})
-         .then((res) => parsedTransactions.value = res.data)
-         .catch((res) => errorMessage.value = res);
-        
-        
-
+        parsedTransactions.value = await new GenericService(`files/${importType}/pre`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form) as FileTransaction[];
     } finally {
       loading.value = false;
 
@@ -116,15 +110,8 @@ async function parseFile(): Promise<void> {
     
     try {
         loading.value = true;
-        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/files/${importType}`, form, { headers: {"Content-Type": "multipart/form-data"}});
+        await new GenericService(`files/${importType}`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form);
         
-        if (res.status === 200) {
-            show.value = false;
-        } else {
-            errorMessage.value = res.statusText;
-            
-        }
-
     } finally {
       loading.value = false;
 

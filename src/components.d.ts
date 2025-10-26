@@ -11,6 +11,7 @@ declare module 'vue' {
     Dashboard: typeof import('./components/Dashboard.vue')['default']
     DialogBase: typeof import('./components/DialogBase.vue')['default']
     FileUploadDialog: typeof import('./components/FileUploadDialog.vue')['default']
+    ImportedFiles: typeof import('./components/ImportedFiles.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TransactionAddForm: typeof import('./components/TransactionAddForm.vue')['default']

@@ -8,6 +8,7 @@
         <v-tab prepend-icon="mdi-sitemap-outline" text="Categories" value="option-1"></v-tab>
         <v-tab prepend-icon="mdi-point-of-sale" text="Merchants" value="option-2"></v-tab>
         <v-tab prepend-icon="mdi-bank" text="Accounts" value="option-3"></v-tab>
+        <v-tab prepend-icon="mdi-file-document-check-outline" value="imported-files" text="Imported Files"></v-tab>
       </v-tabs>
 
       <v-container fluid>
@@ -147,6 +148,9 @@
                 </v-card>
               </v-col>
             </v-row>
+        </v-tabs-window-item>
+        <v-tabs-window-item value="imported-files">
+          <ImportedFiles></ImportedFiles>
         </v-tabs-window-item>
       </v-tabs-window>
       <v-snackbar

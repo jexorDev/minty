@@ -1,94 +1,87 @@
 <template>
+  <v-navigation-drawer
+    v-model="showFilterDrawer"
+    location="right">
+    <v-list>
+      <v-list-item>
+        <template v-slot:append>          
+          <v-icon icon="mdi-close" @click="showFilterDrawer = false"></v-icon>
+        </template>
+      </v-list-item>
+      <v-list-item>        
+        <v-list-item-subtitle>Year</v-list-item-subtitle>
+        <v-select :items="years" v-model="selectedYear" variant="outlined" density="compact"></v-select>
+      </v-list-item>
+      <v-list-item>
+        <v-list-item-subtitle>Month</v-list-item-subtitle>
+        <v-chip-group 
+          v-model="selectedMonth" 
+          color="primary"  
+          column
+          mandatory>
+          <v-chip >Jan</v-chip>
+          <v-chip >Feb</v-chip>
+          <v-chip >Mar</v-chip>
+          <v-chip >Apr</v-chip>
+          <v-chip >May</v-chip>
+          <v-chip >Jun</v-chip>
+          <v-chip >Jul</v-chip>
+          <v-chip >Aug</v-chip>
+          <v-chip >Sep</v-chip>
+          <v-chip >Oct</v-chip>
+          <v-chip >Nov</v-chip>
+          <v-chip >Dec</v-chip>                
+      </v-chip-group>
+      </v-list-item>
+      <v-list-item>
+        <v-list-item-subtitle>Category</v-list-item-subtitle>
+        <v-autocomplete clearable v-model="filterCategoryId" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
+      </v-list-item>
+      <v-list-item>
+        <v-list-item-subtitle>Reporting Type</v-list-item-subtitle>          
+        <v-radio-group
+            v-model="reportingType"
+            base-color="secondary"
+            color="primary"
+            divided
+            density="compact"
+          >
+          <v-radio label="Always include" :value="0"></v-radio>
+          <v-radio label="Exclude by default" :value="1"></v-radio>
+          <v-radio label="Always exclude" :value="2"></v-radio>
+        </v-radio-group>
+        <v-btn @click="reportingType = null" density="compact" color="secondary" variant="text">Reset reporting type</v-btn>
+      </v-list-item>
+     
+    </v-list>
+  </v-navigation-drawer>
+        
+  <v-toolbar color="secondary-darken-1">
+    <v-text-field variant="outlined" density="compact" class="ml-2 mt-5" max-width="500" label="Quick Search" @update:model-value="searchUpdate" clearable></v-text-field>
+    <v-spacer></v-spacer>
+    <v-btn @click="showFilterDrawer = !showFilterDrawer" prepend-icon="mdi-filter-variant" color="primary" :variant="showFilterDrawer ? `flat` : `outlined`">Filter</v-btn>
+  </v-toolbar>
+  <v-row>
+    <v-col :cols="$vuetify.display.mobile ? 12 : 8">
+      <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="filteredTransactions"></TransactionsList>
 
-        <!-- <v-autocomplete :items="autoCompleteObjects" chip item-title="text" item-value="text" variant="underlined" density="compact">
-          <template v-slot:chip="{ props, item }" >
-                  <v-chip
-                    v-bind="props"                  
-                    :text="item.raw.text"
-                  ></v-chip>
-                </template>
+    </v-col>
+    <v-col v-if="!$vuetify.display.mobile" :cols="4">
+      <v-card>
+        <apexchart  :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
+      </v-card>
+      <v-card>
+        <v-data-table :items="tableData" :headers="headers"></v-data-table>
+      </v-card>
+    </v-col>
+  </v-row>
   
-                <template v-slot:item="{ props, item }">
-                  <v-list-item
-                    v-bind="props"      
-                    :subtitle="item.raw.type"
-                    :title="item.raw.text"
-                  ></v-list-item>
-                </template>
-        </v-autocomplete> -->
-        <v-toolbar color="secondary-darken-1">
-
-          <v-text-field variant="outlined" density="compact" class="ml-5 mt-5" label="Quick Search" @update:model-value="searchUpdate" clearable></v-text-field>
-
-
-          <v-select label="Year" :items="years" v-model="selectedYear" variant="outlined" density="compact" max-width="200" class="ml-5 mt-5"></v-select>
-
-          <v-chip-group 
-              v-model="selectedMonth" 
-              color="primary"  
-              class="ml-5"              
-              mandatory>
-                <v-chip >Jan</v-chip>
-                <v-chip >Feb</v-chip>
-                <v-chip >Mar</v-chip>
-                <v-chip >Apr</v-chip>
-                <v-chip >May</v-chip>
-                <v-chip >Jun</v-chip>
-                <v-chip >Jul</v-chip>
-                <v-chip >Aug</v-chip>
-                <v-chip >Sept</v-chip>
-                <v-chip >Oct</v-chip>
-                <v-chip >Nov</v-chip>
-                <v-chip >Dec</v-chip>
-                
-            </v-chip-group>
-            <v-btn-toggle
-                    v-model="reportingType"
-                    base-color="secondary"
-                    color="primary"
-                    divided
-                    density="compact"
-                  >
-                  <v-btn text="Always include"></v-btn>
-                  <v-btn text="Exclude by default"></v-btn>
-                  <v-btn text="Always exclude"></v-btn>
-                </v-btn-toggle>
-            <v-autocomplete clearable v-model="filterCategoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined" density="compact" class="ml-5 mt-5"></v-autocomplete>
-
-        </v-toolbar>
-<!--         <v-data-table-virtual :headers="headers" :items="transactions" fixed-header>
-          <template v-slot:item.actions="{ item }">
-        <div class="d-flex ga-2 justify-end">
-          <v-icon color="medium-emphasis" icon="mdi-pencil" size="small" @click="showAddEditDialog(item)"></v-icon>
-
-          
-        </div>
-      </template>
-        </v-data-table-virtual> -->
-        <v-row>
-          <v-col :cols="$vuetify.display.mobile ? 12 : 8">
-            <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="filteredTransactions"></TransactionsList>
-
-          </v-col>
-           <v-col v-if="!$vuetify.display.mobile" :cols="4">
-            <v-card>
-              <apexchart  :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
-            </v-card>
-            <v-card>
-              <v-data-table :items="tableData" :headers="headers"></v-data-table>
-            </v-card>
-          </v-col>
-        </v-row>
-       
-        <div v-show="isLoading">Loading...</div>
-        <div v-show="noResults">No results</div>
-
-        <v-fab :app="true"  icon="mdi-plus" color="primary">
-          <v-icon>$plus</v-icon>
-           <v-speed-dial  activator="parent">
-          <v-btn key="1" color="primary" @click="showUploadDialog = true">
+  <v-fab :app="true"  icon="mdi-plus" color="primary">
+    <v-icon>$plus</v-icon>
+    <v-speed-dial  activator="parent">
+    <v-btn key="1" color="primary" @click="showUploadDialog = true">
             File
-          </v-btn>
+    </v-btn>
 
           <v-btn key="2" color="primary" @click="showAddEditDialog()">
             Single
@@ -156,8 +149,9 @@ import { useDisplay } from 'vuetify';
   const { mobile } = useDisplay()
 
   const addFormKey = ref(1);
-  const reportingType = ref<number | undefined>(undefined);
+  const reportingType = ref<number | null>(null);
   const filterCategoryId = ref<number | null>(null);
+  const showFilterDrawer = ref(false);
 
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedYear.value);
   
@@ -233,7 +227,7 @@ import { useDisplay } from 'vuetify';
   }
 
   const filteredTransactions = computed(() => transactions.value
-    .filter(x => reportingType.value === undefined || x.categoryReportingType === reportingType.value)
+    .filter(x => reportingType.value === null || x.categoryReportingType === reportingType.value)
     .filter(x => filterCategoryId.value === null || x.categoryId === filterCategoryId.value));
 
   function formatDate(date: string | Date): string {

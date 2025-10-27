@@ -1,67 +1,64 @@
-  <template>
-      <v-dialog
-              v-model="show"
-              transition="dialog-bottom-transition"
-              fullscreen
-              :loading="loading"
-            >
-            
-        
-              <v-card>
-                <v-toolbar color="secondary-darken-1" density="compact">
-                  <v-toolbar-title>Upload file</v-toolbar-title>
-                  <v-toolbar-items>
-                    <v-btn
-                    icon="mdi-close"                
-                    @click="show = false"
-                  ></v-btn>
-                  </v-toolbar-items>
-                </v-toolbar>
+<template>
+  <v-dialog
+    v-model="show"
+    transition="dialog-bottom-transition"
+    fullscreen
+    :loading="loading"
+  >
+   <v-card>
+      <v-toolbar color="secondary-darken-1" density="compact">
+        <v-toolbar-title>Upload file</v-toolbar-title>
+        <v-toolbar-items>
+          <v-btn
+            icon="mdi-close"                
+            @click="show = false"
+          ></v-btn>
+        </v-toolbar-items>
+      </v-toolbar>
                 
-                <v-card-text>
-                   
-<v-row>
-    <v-col>
-
-        <v-select v-model="selectedImportType" :items="importTypes"></v-select>
-    </v-col>
-    <v-col>
-        <v-file-input
-        v-model="selectedFileUpload"
-        label="File input"
-        ></v-file-input>
-
-    </v-col>
-    <v-col>
-        <v-btn @click="parseFile" :loading="loading">Submit</v-btn>
-    </v-col>
-</v-row>
-<v-row>
-<v-col>
-     <v-alert v-if="errorMessage" color="error" :text="errorMessage">
-                        
-                    </v-alert>
-                    <v-alert v-if="parsedTransactions.length > 0" color="info" title="Take a look">
+    <v-card-text>                   
+      <v-row>
+        <v-col>
+          <v-select v-model="selectedImportType" :items="importTypes"></v-select>
+        </v-col>
+        <v-col>
+          <v-file-input
+            v-model="selectedFileUpload"
+            label="File input"
+            ></v-file-input>
+        </v-col>
+        <v-col>
+          <v-btn @click="parseFile" :loading="loading">Submit</v-btn>
+        </v-col>
+    </v-row>
+    <v-row>
+      <v-col>
+        
+        <v-alert v-if="parsedTransactions.length > 0" color="info" title="Take a look">
 
                         Does the following look right?
                         <v-btn @click="uploadFile" variant="text" :loading="loading">Yes, complete uploading file</v-btn>
                     </v-alert>
-    <v-data-table :items="parsedTransactions"></v-data-table>
-</v-col>
-</v-row>
-            
-                </v-card-text>
+        <v-data-table :items="parsedTransactions"></v-data-table>
+      </v-col>
+    </v-row>
+  </v-card-text>
 
-              <v-card-actions>
-                <v-btn color="primary" variant="tonal" @click="show = false">Close</v-btn>                
-              </v-card-actions>  
-              </v-card>
-              
-            </v-dialog>
-
-  </template>
-  <script setup lang="ts">
+  <v-card-actions>
+    <v-btn color="primary" variant="tonal" @click="show = false">Close</v-btn>                
+  </v-card-actions>  
+  </v-card>              
+</v-dialog>
+</template>
+<script setup lang="ts">
 import GenericService from '@/data/services/GenericService';
+import { useCategoryStore } from '../stores/CategoryStore';
+import { useMerchantStore } from '../stores/MerchantStore';
+import { useAccountStore } from '../stores/AccountStore';
+import CategoryService from '@/data/services/CategoryService';
+import MerchantService from '@/data/services/MerchantService';
+import AccountService from '@/data/services/AccountService';
+
 
 interface FileTransaction {
     date: Date;
@@ -76,45 +73,57 @@ interface FileTransaction {
 const parsedTransactions = ref<FileTransaction[]>([]);
 
 const show = defineModel<boolean>();
-const errorMessage = ref("");
+const emit = defineEmits<{(e: "refresh"): void}>();
+
+const categoryStore = useCategoryStore();
+const merchantStore = useMerchantStore();
+const accountStore = useAccountStore();
 
 const loading = ref(false);
-  const selectedFileUpload = ref<File|null>(null);
+const selectedFileUpload = ref<File|null>(null);
 const importTypes = ['Mint', 'Rocket Money', 'Bank of America'];
-  const selectedImportType = ref<string>("Mint");
+const selectedImportType = ref<string>("Mint");
 
 async function parseFile(): Promise<void> {
-    if (selectedFileUpload.value === null) return;
-    parsedTransactions.value = [];
+  if (selectedFileUpload.value === null) return;
+  
+  parsedTransactions.value = [];
 
-    const form = new FormData();
-    form.append('csvFile', selectedFileUpload.value);
-    
-    var importType = importTypes.indexOf(selectedImportType.value);
-
-    try {
-        loading.value = true;
-        parsedTransactions.value = await new GenericService(`files/${importType}/pre`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form) as FileTransaction[];
-    } finally {
-      loading.value = false;
-
-    }
+  const form = new FormData();
+  form.append('csvFile', selectedFileUpload.value);
+  
+  var importType = importTypes.indexOf(selectedImportType.value);
+  
+  try {
+      loading.value = true;
+      parsedTransactions.value = await new GenericService(`files/${importType}/pre`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form) as FileTransaction[];
+  } finally {
+    loading.value = false;
   }
+}
 
   async function uploadFile(): Promise<void> {
-      if (selectedFileUpload.value === null) return;
-
+    if (selectedFileUpload.value === null) return;
+    
     const form = new FormData();
     form.append('csvFile', selectedFileUpload.value);
     var importType = importTypes.indexOf(selectedImportType.value);
-    
+        
     try {
         loading.value = true;
-        await new GenericService(`files/${importType}`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form);
         
+        await new GenericService(`files/${importType}`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form);        
+        
+        await Promise.all([
+          categoryStore.categories = await new CategoryService().getMultiple(),
+          merchantStore.merchants = await new MerchantService().getMultiple(),
+          accountStore.accounts = await new AccountService().getMultiple()
+        ]);
+        
+        show.value = false;
+        emit("refresh");
     } finally {
       loading.value = false;
-
     }
   }
 </script>

@@ -1,6 +1,51 @@
 <template>
-  <v-main>
-      <v-app-bar v-if="$vuetify.display.mobile" color="primary">
+  <v-main>    
+    <v-dialog v-model="errorStore.show">
+      <v-card color="error" title="An error occurred">        
+        <template v-slot:append>
+          <v-icon icon="mdi-close" @click="errorStore.show = false"></v-icon>
+        </template>        
+        <v-card-text>
+          {{ errorStore.error }}
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="errorStore.show = false">Dismiss</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+     <v-snackbar
+     :color="snackbarStore.type"
+      v-model="snackbarStore.show"
+    >
+      {{ snackbarStore.message }}
+
+      <template v-slot:actions>
+        <v-btn          
+          variant="text"
+          @click="snackbarStore.show = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+    <v-dialog v-model="confirmationStore.show" max-width="600">
+      <v-card>
+        <v-card-text>
+          {{ confirmationStore.confirmationMessage }}
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="confirmationStore.show=false">Cancel</v-btn>
+          <v-btn @click="confirmationStore.executeConfirmationFunction">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    
+   
+      <v-app-bar 
+        v-if="$vuetify.display.mobile" 
+        scroll-behavior="fully-hide"
+        density="compact"
+        color="primary">
         <v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       
       </v-app-bar>
@@ -33,10 +78,10 @@
         </v-list>
       </v-navigation-drawer>
 
-
-     
-    <router-view />
-  </v-main>
+      
+      <router-view />
+    </v-main>
+    
 
   <!-- <AppFooter /> -->
 </template>
@@ -50,10 +95,16 @@ import { useMerchantStore } from '../stores/MerchantStore';
 import { useAccountStore } from '../stores/AccountStore';
 import MerchantService from '../data/services/MerchantService';
 import AccountService from '../data/services/AccountService';
+import { useErrorStore } from '@/stores/ErrorStore';
+import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { useConfirmationStore } from '@/stores/ConfirmationStore';
 
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
+const errorStore = useErrorStore();
+const snackbarStore = useSnackbarStore();
+const confirmationStore = useConfirmationStore();
 
 const { mobile } = useDisplay()
 
@@ -66,9 +117,11 @@ onMounted(async () => {
     const res = getJwtPayload(jwtToken);
     username.value = res;
 
-    categoryStore.categories = await new CategoryService().getMultiple();
-    merchantStore.merchants = await new MerchantService().getMultiple();
-    accountStore.accounts = await new AccountService().getMultiple();
+    await Promise.all([
+      categoryStore.categories = await new CategoryService().getMultiple(),
+      merchantStore.merchants = await new MerchantService().getMultiple(),
+      accountStore.accounts = await new AccountService().getMultiple()
+    ]);
   }
 })
 

@@ -1,6 +1,6 @@
 <template>
   <v-navigation-drawer
-    v-model="showFilterDrawer"
+    v-model="showFilterDrawer"    
     location="right">
     <v-list>
       <v-list-item>
@@ -56,14 +56,17 @@
     </v-list>
   </v-navigation-drawer>
         
-  <v-toolbar color="secondary-darken-1">
+  <v-toolbar color="secondary-darken-1" density="compact">
     <v-text-field variant="outlined" density="compact" class="ml-2 mt-5" max-width="500" label="Quick Search" @update:model-value="searchUpdate" clearable></v-text-field>
     <v-spacer></v-spacer>
     <v-btn @click="showFilterDrawer = !showFilterDrawer" prepend-icon="mdi-filter-variant" color="primary" :variant="showFilterDrawer ? `flat` : `outlined`">Filter</v-btn>
   </v-toolbar>
   <v-row>
     <v-col :cols="$vuetify.display.mobile ? 12 : 8">
-      <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="filteredTransactions"></TransactionsList>
+      <div :class="$vuetify.display.mobile ? '' : 'scroll'">
+        <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="filteredTransactions"></TransactionsList>
+
+      </div>
 
     </v-col>
     <v-col v-if="!$vuetify.display.mobile" :cols="4">
@@ -91,9 +94,9 @@
         </v-speed-dial>
         </v-fab>
 
-    <TransactionAddForm :key="addFormKey" :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
+    <TransactionAddForm :key="addFormKey" :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="getData"></TransactionAddForm>
 
-    <FileUploadDialog v-model="showUploadDialog" @close="showUploadDialog = false"></FileUploadDialog>
+    <FileUploadDialog v-model="showUploadDialog" @refresh="getData"></FileUploadDialog>
     
   </template>
   
@@ -151,7 +154,7 @@ import { useDisplay } from 'vuetify';
   const addFormKey = ref(1);
   const reportingType = ref<number | null>(null);
   const filterCategoryId = ref<number | null>(null);
-  const showFilterDrawer = ref(false);
+  const showFilterDrawer = ref(true);
 
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedYear.value);
   
@@ -200,6 +203,7 @@ import { useDisplay } from 'vuetify';
 
     if (!searchString) {
       transactions.value = [];
+      getData();
       noResults.value = false;
       return;
     }
@@ -306,5 +310,10 @@ import { useDisplay } from 'vuetify';
   // } )]);
 
   </script>
-  
+  <style scoped>
+.scroll {
+  height: 95vh;
+  overflow: auto;
+}
+</style>
   

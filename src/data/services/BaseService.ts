@@ -1,4 +1,5 @@
 import router from '@/router';
+import { useErrorStore } from '@/stores/ErrorStore';
 import axios from 'axios';
 import qs from 'qs';
 
@@ -8,6 +9,8 @@ export default abstract class BaseService<T> {
     private urlParameters: string = "";
     private headers: {headerName: string, headerValue: any}[] = [];
     private axiosInstance = axios.create();
+
+    private errorStore = useErrorStore();
 
     constructor(urlPath: string) {
         this.urlPath = urlPath;
@@ -27,6 +30,8 @@ export default abstract class BaseService<T> {
             (error) => {
             if (error.response.status === 401) {
                 router.push("/login");
+            } else {
+                this.errorStore.setError(error.response.data);
             }
             return Promise.reject(error);
         })
@@ -39,7 +44,7 @@ export default abstract class BaseService<T> {
     async getSingle(): Promise<T> {        
         const res = await this.axiosInstance.get(this.url, {
             params: qs.stringify(this.urlParameters)
-        });
+        });        
         return (res.data as T);
     }
 

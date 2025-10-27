@@ -15,16 +15,15 @@
       <v-tabs-window v-model="tab">
         <v-tabs-window-item value="option-1">  
             <v-row>
-              <v-col :cols="$vuetify.display.mobile ? 12 : 4">
-                <v-row>
-                  <v-col cols="9">
+              <v-col 
+                cols="12"
+                md="4">
+                <v-list :class="$vuetify.display.mobile ? '' : 'main-list-scroll'">
+                    <v-list-item>
                     <v-text-field v-model="categoryFilter" density="compact" label="Filter" clearable></v-text-field>
-                  </v-col>
-                  <v-col cols="3">
                     <v-btn @click="addNewCategory" color="primary">Add New</v-btn>
-                  </v-col>
-                </v-row>
-                <v-list style="height: 97vh; overflow: auto;">
+
+                    </v-list-item>
                   <v-list-item v-for="category in filteredCategories" @click="selectedCategory = category">
                     <v-list-item-title>
                       {{ category.name }}
@@ -35,7 +34,9 @@
                   </v-list-item>
                 </v-list>
               </v-col>
-              <v-col :cols="$vuetify.display.mobile ? 12 : 8">                    
+              <v-col 
+                cols="12"
+                md="8">
                 <v-card v-if="selectedCategory" color="secondary-darken-1">
                   <v-card-title>
                     {{ selectedCategory.pk ? 'Edit' : "Add" }} Category
@@ -75,7 +76,7 @@
                         </v-btn-toggle>                   
                       </v-tabs-window-item>
                       <v-tabs-window-item value="transactions">
-                        <v-card>
+                        <v-card :class="$vuetify.display.mobile ? '' : 'inner-list-scroll'">
                           <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="selectedCategoryTransactions"></TransactionsList>
                         </v-card>
                       </v-tabs-window-item>
@@ -88,10 +89,10 @@
                     
                   </v-card-text>
                   <v-card-actions>
-                    <v-btn :disabled="!selectedCategory.pk" color="primary-darken-1">Delete</v-btn>
-                    <v-btn :disabled="!selectedCategory.pk" variant="outlined" color="primary-darken-1" append-icon="mdi-source-merge" @click="showConvertCategoryDialog = true">Merge</v-btn>
+                    <v-btn :disabled="!selectedCategory.pk" color="primary-darken-1" @click="deleteCategory()">Delete</v-btn>
+                    <v-btn :disabled="!selectedCategory.pk" variant="tonal" color="primary-darken-1" append-icon="mdi-source-merge" @click="showConvertCategoryDialog = true">Merge</v-btn>
                     <v-spacer></v-spacer>
-                    <v-btn variant="tonal" color="primary-darken-1" @click="saveCategory()">Save</v-btn>
+                    <v-btn variant="outlined" color="primary-darken-1" @click="saveCategory()">Save</v-btn>
                   </v-card-actions>
                 </v-card>
               </v-col>
@@ -101,7 +102,7 @@
         <v-tabs-window-item value="option-2">
             <v-row>
               <v-col :cols="4">
-                <v-list style="height: 97vh; overflow: auto;">
+                <v-list :class="$vuetify.display.mobile ? '' : 'main-list-scroll'">
                   <v-list-item v-for="merchant in merchantStore.merchants" @click="selectedMerchant = merchant">
                     <v-list-item-title>
                       {{ merchant.name }}
@@ -110,14 +111,16 @@
                 </v-list>
               </v-col>
               <v-col :cols="8">
-                <v-card v-if="selectedMerchant">
+                <v-card v-if="selectedMerchant" color="secondary-darken-1">
                   <v-card-title>Edit Merchant</v-card-title>
                   <v-card-text>
                     <div class="text-overline">Name</div>
                     <v-text-field v-model="selectedMerchant.name"></v-text-field>                  
                   </v-card-text>
                   <v-card-actions>
-                    <v-btn @click="saveMerchant()">Save</v-btn>
+                    <v-btn :disabled="!selectedMerchant.pk" color="primary-darken-1">Delete</v-btn>                    
+                    <v-spacer></v-spacer>
+                    <v-btn variant="outlined" color="primary-darken-1" @click="saveMerchant()">Save</v-btn>
                   </v-card-actions>
                 </v-card>
               </v-col>
@@ -127,7 +130,7 @@
         <v-tabs-window-item value="option-3">
            <v-row>
               <v-col :cols="4">
-                <v-list style="height: 97vh; overflow: auto;">
+                <v-list :class="$vuetify.display.mobile ? '' : 'main-list-scroll'">
                   <v-list-item v-for="account in accountStore.accounts" @click="selectedAccount = account">
                     <v-list-item-title>
                       {{ account.name }}
@@ -136,14 +139,16 @@
                 </v-list>
               </v-col>
               <v-col :cols="8">
-                <v-card v-if="selectedAccount">
+                <v-card v-if="selectedAccount" color="secondary-darken-1">
                   <v-card-title>Edit Account</v-card-title>
                   <v-card-text>
                     <div class="text-overline">Name</div>
                     <v-text-field v-model="selectedAccount.name"></v-text-field> 
                   </v-card-text>
                   <v-card-actions>
-                    <v-btn @click="saveAccount()">Save</v-btn>
+                    <v-btn :disabled="!selectedAccount.pk" color="primary-darken-1">Delete</v-btn>                    
+                    <v-spacer></v-spacer>
+                    <v-btn variant="outlined" color="primary-darken-1" @click="saveAccount()">Save</v-btn>
                   </v-card-actions>
                 </v-card>
               </v-col>
@@ -152,22 +157,7 @@
         <v-tabs-window-item value="imported-files">
           <ImportedFiles></ImportedFiles>
         </v-tabs-window-item>
-      </v-tabs-window>
-      <v-snackbar
-      v-model="snackbar"
-    >
-      {{ snackbarText }}
-
-      <template v-slot:actions>
-        <v-btn
-          color="pink"
-          variant="text"
-          @click="snackbar = false"
-        >
-          Close
-        </v-btn>
-      </template>
-    </v-snackbar>
+      </v-tabs-window>     
 
     <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
 
@@ -214,10 +204,14 @@ import TransactionsService from '@/data/services/TransactionsService';
 import GenericService from '@/data/services/GenericService';
 import type CategoryRule from '@/data/interfaces/CategoryRule';
 import CategoryRuleService from '@/data/services/CategoryRuleService';
+import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { useConfirmationStore } from '@/stores/ConfirmationStore';
 
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
+const snackbarStore = useSnackbarStore();
+const confirmationStore = useConfirmationStore();
 
 const { mobile } = useDisplay()
 
@@ -244,8 +238,6 @@ const showAddTransactionDialog = ref(false);
 const selectedCategoryTab = ref("general");
 const selectedCategoryTransactions = ref<TransactionSearch[]>([]);
 const selectedCategoryRules = ref<CategoryRule[]>([]);
-const snackbar = ref(false);
-const snackbarText = ref("");
 const categoryFilter = ref("");
 
 async function saveCategory() {
@@ -260,9 +252,14 @@ async function saveCategory() {
       selectedCategory.value = categoryStore.categories.find(x => x.pk === persistedCategory.pk) ?? null;
     }
   } finally {
-    snackbar.value = true;
-    snackbarText.value = `Successfully saved`;
+    snackbarStore.setMessage("Category successfully saved.", "success");    
   }
+}
+
+async function deleteCategory() {
+  confirmationStore.setConfirmation("Are you sure you want to delete this category?", async () => {
+    snackbarStore.setMessage("This doesn't work yet", "info");
+  });
 }
 
 async function saveMerchant() {
@@ -289,14 +286,17 @@ async function convertCategory(): Promise<void> {
   }
   
   await new GenericService("transactions/convert/category").withUrlParameters({
-    "fromCategory": selectedCategory.value?.pk,
-    "toCategory": selectedConvertCategory.value
-  }).put(null).then(async () =>
-  { 
-    selectedCategory.value = null;
-    categoryStore.categories = await new CategoryService().getMultiple();
-    showConvertCategoryDialog.value = false
-  });
+      "fromCategory": selectedCategory.value?.pk,
+      "toCategory": selectedConvertCategory.value
+    }).put(null).then(async () =>
+    { 
+      selectedCategory.value = null;
+      categoryStore.categories = await new CategoryService().getMultiple();
+      showConvertCategoryDialog.value = false
+      snackbarStore.setMessage("Category successfully merged", "success");
+    });
+
+  
 }
 
 function addNewCategory() {
@@ -329,3 +329,13 @@ watch(selectedCategoryTab, async () => {
   watch(selectedTransaction, () => showAddTransactionDialog.value = true);
 
 </script>
+<style scoped>
+.main-list-scroll {
+  max-height: 97vh;
+  overflow: auto;
+}
+.inner-list-scroll {
+  max-height: 75vh;
+  overflow: auto;
+}
+</style>

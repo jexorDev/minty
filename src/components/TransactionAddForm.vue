@@ -1,35 +1,33 @@
 <template>
-<v-dialog v-model="show" fullscreen>
-  
-   <v-card>
-            <v-toolbar color="secondary-darken-1" density="compact">
-              <v-toolbar-title>Transaction</v-toolbar-title>
-              <v-toolbar-items>
-                <v-btn
-                icon="mdi-close"                
-                @click="show = false"
-              ></v-btn>
-              </v-toolbar-items>
-            </v-toolbar>
-               <v-tabs
-        v-model="tab"
-        color="primary"
-      >
-        <v-tab prepend-icon="mdi-sitemap-outline" text="General" value="option-1"></v-tab>
-        <v-tab prepend-icon="mdi-point-of-sale" text="Splits" value="option-2"></v-tab>
-      </v-tabs>
+<v-dialog v-model="show" fullscreen>  
+  <v-card>
+    <v-toolbar color="secondary-darken-1" density="compact">
+      <v-toolbar-title>Transaction</v-toolbar-title>
+      <v-toolbar-items>
+        <v-btn
+          icon="mdi-close"                
+          @click="show = false"
+        ></v-btn>
+      </v-toolbar-items>
+    </v-toolbar>
+    <v-tabs
+      v-model="tab"
+      color="primary"
+    >
+      <v-tab prepend-icon="mdi-sitemap-outline" text="General" value="option-1"></v-tab>
+      <v-tab prepend-icon="mdi-point-of-sale" text="Splits" value="option-2"></v-tab>
+    </v-tabs>
 
-      <v-container fluid>
-      <v-tabs-window v-model="tab">
-        <v-tabs-window-item value="option-1">
+    <v-container>
+    <v-tabs-window v-model="tab">
+      <v-tabs-window-item value="option-1">
         <v-row>
           <v-col
             cols="12"
             md="3"
           >
            <v-date-input v-model="fetchedTransaction.transactionDate"></v-date-input>
-          </v-col>
-  
+          </v-col>  
           <v-col
             cols="12"
             md="6"
@@ -38,10 +36,8 @@
               v-model="fetchedTransaction.description"
               label="Description"
               required
-            ></v-text-field>
-           
-          </v-col>
-  
+            ></v-text-field>           
+          </v-col>  
           <v-col
             cols="12"
             md="3"
@@ -55,18 +51,21 @@
           </v-col>
         </v-row>
         <v-row>
-          <v-col>
+          <v-col
+            cols="12"
+            md="4">
             <v-autocomplete v-model="fetchedTransaction.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
-          <v-col>
-            <v-select label="Subcategory"></v-select>
-          </v-col>
-          <v-col>
+          
+          <v-col
+            cols="12"
+            md="4">
             <v-autocomplete v-model="fetchedTransaction.merchantId" label="Merchant" :items="merchantStore.merchants" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
+        
+          <v-col
+            cols="12"
+            md="4">
             <v-autocomplete v-model="fetchedTransaction.accountId" label="Account" :items="accountStore.accounts" item-title="name" item-value="pk"></v-autocomplete>
           </v-col>
         </v-row>
@@ -79,6 +78,7 @@
             ></v-text-field>
           </v-col>
         </v-row>
+
           </v-tabs-window-item>
           <v-tabs-window-item value="option-2">
             <div class="d-flex">
@@ -88,7 +88,9 @@
             </div>
             
             <v-row>
-              <v-col>             
+              <v-col
+                cols="12"
+                md="9">             
                 <v-row v-for="split of fetchedTransactionSplits">
                   <v-col>
                     <v-select label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
@@ -101,7 +103,9 @@
                   </v-col>
                 </v-row> 
               </v-col>
-              <v-col cols="3">
+              <v-col 
+                cols="12"
+                md="3">
                 <v-card>
                   <v-card-text>
                     <v-list>
@@ -118,7 +122,8 @@
                   </v-card-text>
                 </v-card>
               </v-col>
-            </v-row>
+            </v-row>  
+        
  
       
           </v-tabs-window-item>
@@ -151,6 +156,8 @@ const tab = ref("option-1");
 const props = defineProps<{
   transaction: TransactionSearch
 }>();
+
+const emit = defineEmits<{(e: "refresh"): void}>();
 
 const fetchedTransaction = ref<Transaction>({} as Transaction);
 const fetchedTransactionSplits = ref<TransactionSplit[]>([] as TransactionSplit[]);
@@ -235,6 +242,7 @@ async function save() {
   }
 
   show.value = false;
+  emit("refresh");
 }
 
 const currentSplitAllocation = computed(() => {

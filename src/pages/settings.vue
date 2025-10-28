@@ -17,12 +17,15 @@
             <v-row>
               <v-col 
                 cols="12"
-                md="4">
+                md="4"
+                v-if="!$vuetify.display.mobile || selectedCategory === null">
                 <v-list :class="$vuetify.display.mobile ? '' : 'main-list-scroll'">
                     <v-list-item>
-                    <v-text-field v-model="categoryFilter" density="compact" label="Filter" clearable></v-text-field>
-                    <v-btn @click="addNewCategory" color="primary">Add New</v-btn>
-
+                      <v-text-field v-model="categoryFilter" density="compact" label="Filter" clearable class="mt-4 mr-2"></v-text-field>                      
+                      <template v-slot:append>
+                        <v-btn @click="addNewCategory" color="primary">Add New</v-btn>
+                      </template>
+                      
                     </v-list-item>
                   <v-list-item v-for="category in filteredCategories" @click="selectedCategory = category">
                     <v-list-item-title>
@@ -36,11 +39,12 @@
               </v-col>
               <v-col 
                 cols="12"
-                md="8">
-                <v-card v-if="selectedCategory" color="secondary-darken-1">
-                  <v-card-title>
-                    {{ selectedCategory.pk ? 'Edit' : "Add" }} Category
-                  </v-card-title>
+                md="8"
+                >
+                <v-card v-if="selectedCategory" color="secondary-darken-1" :title="selectedCategory.pk ? 'Edit Category' : 'Add Category'">
+                  <template v-slot:append>
+                    <v-icon icon="mdi-close" @click="selectedCategory = null"></v-icon>
+                  </template>                  
                   <v-tabs v-model="selectedCategoryTab">
                     <v-tab value="general">General</v-tab>
                     <v-tab value="transactions" :disabled="!selectedCategory.pk">Transactions</v-tab>

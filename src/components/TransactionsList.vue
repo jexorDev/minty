@@ -1,6 +1,6 @@
 <template>
         <v-list>
-          <v-list-item v-for="transaction in props.transactions" :key="transaction.pk" @click="selectedTransaction = transaction" append-icon="mdi-source-fork">
+          <v-list-item v-for="transaction in props.transactions" :key="transaction.pk" @click="emits('selectedTransactionChanged', transaction)">
             <template v-slot:prepend>
               <v-icon v-if="transaction.splitId" icon="mdi-source-fork"></v-icon>
             </template>
@@ -20,12 +20,13 @@
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import dayjs from 'dayjs';
 
-const selectedTransaction = defineModel<TransactionSearch | null>("selectedTransaction");
-
 const props = defineProps<{
   transactions: TransactionSearch[]
 }>();
 
+const emits = defineEmits<{
+  (e: "selectedTransactionChanged", value: TransactionSearch): void
+}>();
 
 function formatDate(date: string | Date): string {
   return dayjs(date).format("MM/DD/YYYY")

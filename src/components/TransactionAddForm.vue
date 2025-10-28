@@ -82,8 +82,7 @@
           </v-tabs-window-item>
           <v-tabs-window-item value="option-2">
             <div class="d-flex">
-              <v-btn @click="addNew()" variant="elevated" color="primary" class="ml-2 mt-2">Add Split</v-btn>
-              <v-checkbox v-model="splitEqually" label="Split Equally" ></v-checkbox>
+              
 
             </div>
             
@@ -91,33 +90,36 @@
               <v-col
                 cols="12"
                 md="9">             
-                <v-row v-for="split of fetchedTransactionSplits">
-                  <v-col>
-                    <v-select label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
-                  </v-col>
-                  <v-col>
-                    <v-text-field v-model="split.amount"></v-text-field>
-                  </v-col>
-                  <v-col>
-                    <v-btn @click="deleteSplit(split)" color="secondary" class="mt-3">Delete</v-btn>
-                  </v-col>
-                </v-row> 
+                <v-card max-width="800">
+                  <v-toolbar color="secondary-darken-1" density="compact" class="mb-2">
+                    <v-checkbox v-model="splitEqually" label="Split Equally" class="mt-5"></v-checkbox>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="addNew()" variant="elevated" color="primary">Add Split</v-btn>
+                  </v-toolbar>
+                  <v-row v-for="split of fetchedTransactionSplits">
+                    <v-col cols="7">
+                      <v-select label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
+                    </v-col>
+                    <v-col cols="4">
+                      <!-- <v-combobox v-model="split.amount" hide-no-data :items="splitAmountAutoComplete"></v-combobox> -->
+                       <v-text-field v-model="split.amount" prefix="$" :append-inner-icon="$vuetify.display.mobile || remainingSplitAllocation <= 0 ? '' : 'mdi-arrow-collapse-up'" v-on:click:append-inner="allocateRemainingToSplit(split)"></v-text-field>
+                      
+                    </v-col>
+                    <v-col cols="1">
+                      <v-btn @click="deleteSplit(split)" color="secondary" class="mt-3" icon="mdi-close" variant="text"></v-btn>
+                    </v-col>
+                  </v-row> 
+                </v-card>
               </v-col>
               <v-col 
                 cols="12"
                 md="3">
-                <v-card>
+                <v-card color="secondary-darken-1">
                   <v-card-text>
-                    <v-list>
-                      <v-list-item>
-                        <v-list-item-title>Transaction Total</v-list-item-title>
-                        <v-list-item-subtitle>{{ fetchedTransaction.amount }}</v-list-item-subtitle>
-                      </v-list-item>
-                      <v-list-item>
-                        <v-list-item-title>Remaining Allocation</v-list-item-title>
-                        <v-list-item-subtitle>{{ remainingSplitAllocation }}</v-list-item-subtitle>
-                      </v-list-item>
-                    </v-list>
+                    <div class="text-overline">Transaction Total</div>
+                    <div>${{ fetchedTransaction.amount }}</div>
+                    <div class="text-overline">Remaining Allocation</div>
+                    <div>${{ remainingSplitAllocation }} <v-icon v-if="remainingSplitAllocation !== fetchedTransaction.amount" :icon="remainingSplitAllocation === 0 ? 'mdi-check' : 'mdi-alert'" :color="remainingSplitAllocation === 0 ? 'success' : 'warning'"></v-icon></div>
                       
                   </v-card-text>
                 </v-card>
@@ -154,7 +156,7 @@ const show = defineModel<boolean>("show")
 const tab = ref("option-1");
 
 const props = defineProps<{
-  transaction: TransactionSearch
+  transaction?: TransactionSearch
 }>();
 
 const emit = defineEmits<{(e: "refresh"): void}>();
@@ -168,19 +170,22 @@ const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
 
 watch(show, async (newValue) => {
-  if (!newValue) return;
+  if (!newValue) return;  
 
   tab.value = "option-1";
-  fetchedTransaction.value = await new TransactionsService().withRouteParameter((props.transaction.splitId ?? props.transaction.pk).toString()).getSingle();
-        if (props.transaction.splitId) {
-          fetchedTransactionSplits.value = await new TransactionSplitsService(props.transaction.splitId).getMultiple();
-          if (fetchedTransactionSplits.value.length > 0) {
-            tab.value = "option-2";
-          }
-        } else {
-          fetchedTransactionSplits.value = [];
-        }
-})
+  fetchedTransaction.value = {} as TransactionSearch;
+  fetchedTransactionSplits.value = [];
+
+  if (props.transaction) {
+    fetchedTransaction.value = await new TransactionsService().withRouteParameter((props.transaction.splitId ?? props.transaction.pk).toString()).getSingle();
+    if (props.transaction.splitId) {
+      fetchedTransactionSplits.value = await new TransactionSplitsService(props.transaction.splitId).getMultiple();
+      if (fetchedTransactionSplits.value.length > 0) {
+        tab.value = "option-2";
+      }
+    } 
+  }
+}, {deep: true})
 
 
 function addNew() {
@@ -243,6 +248,10 @@ async function save() {
 
   show.value = false;
   emit("refresh");
+}
+
+function allocateRemainingToSplit(split: TransactionSplit) {
+  split.amount += remainingSplitAllocation.value;
 }
 
 const currentSplitAllocation = computed(() => {

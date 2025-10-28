@@ -64,7 +64,7 @@
   <v-row>
     <v-col :cols="$vuetify.display.mobile ? 12 : 8">
       <div :class="$vuetify.display.mobile ? '' : 'scroll'">
-        <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="filteredTransactions"></TransactionsList>
+        <TransactionsList @selected-transaction-changed="setTransactionToEdit" :transactions="filteredTransactions"></TransactionsList>
 
       </div>
 
@@ -86,7 +86,7 @@
             File
     </v-btn>
 
-          <v-btn key="2" color="primary" @click="showAddEditDialog()">
+          <v-btn key="2" color="primary" @click="setTransactionToEdit()">
             Single
           </v-btn>
 
@@ -128,7 +128,7 @@ import { useDisplay } from 'vuetify';
   }
   
   const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
-  const selectedTransaction = ref<TransactionSearch>({} as TransactionSearch);
+  const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
   const searchItems = ref<Transaction[]>([])
   //const categories = ref<Category[]>([]);
@@ -168,17 +168,6 @@ import { useDisplay } from 'vuetify';
     await getData();
 
   });
-
-  function save() {
-    // try {
-    //   loading.value = true;
-    //   await transactionModel.value.save(new TransactionsService());      
-       showAddTransactionDialog.value = false;
-    // } finally {
-    //   loading.value = false;
-    // }
-    getData();
-  }
 
   async function getData(): Promise<void> {
     const fromDate = `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-01`;
@@ -246,39 +235,10 @@ import { useDisplay } from 'vuetify';
     await getData();
   });
 
-  watch(selectedTransaction, () => showAddTransactionDialog.value = true);
-
-  async function showAddEditDialog(transaction?: TransactionSearch) {
-    
-    transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>([]);
-    
-    if (transaction) {
-//      transactionModel.value = new TransactionModel(transaction);
-      transactionModel.value = transaction;
-      if (transaction.splitId) {
-        var splitModels: TransactionSplitModel[] = [];
-
-        // for (var trans of await new TransactionSplitsService(transaction.pk!).getMultiple()) {
-        //   splitModels.push(new TransactionSplitModel({
-        //     pk: trans.pk,
-        //     transactionId: trans.transactionId,
-        //     amount: trans.amount,
-        //     categoryId: trans.categoryId ?? 0,
-        //     subcategoryId: trans.subcategoryId ?? 0,
-        //     exclude: trans.exclude ?? false
-        //   }));
-        // }
-        
-        transactionSplitModels.value = new ModelList<TransactionSplitModel, TransactionSplit>(splitModels);
-        
-      }
-    } else {
-      transactionModel.value = {} as TransactionSearch;
-    }
-
-    addFormKey.value += 1;
+  function setTransactionToEdit(transaction?: TransactionSearch) {
+    selectedTransaction.value = transaction;
     showAddTransactionDialog.value = true;
-  }  
+  }
 
   const tableData = computed(() => {
     if (spendingDonutChartSeries.value.length > 0) {
@@ -312,7 +272,7 @@ import { useDisplay } from 'vuetify';
   </script>
   <style scoped>
 .scroll {
-  height: 95vh;
+  height: 93vh;
   overflow: auto;
 }
 </style>

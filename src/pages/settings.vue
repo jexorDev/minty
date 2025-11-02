@@ -5,15 +5,15 @@
         color="primary"
         :direction="mobile ? 'horizontal': 'vertical'"
       >
-        <v-tab prepend-icon="mdi-sitemap-outline" text="Categories" value="option-1"></v-tab>
-        <v-tab prepend-icon="mdi-point-of-sale" text="Merchants" value="option-2"></v-tab>
-        <v-tab prepend-icon="mdi-bank" text="Accounts" value="option-3"></v-tab>
+        <v-tab prepend-icon="mdi-sitemap-outline" text="Categories" value="category"></v-tab>
+        <v-tab prepend-icon="mdi-point-of-sale" text="Merchants" value="merchant"></v-tab>
+        <v-tab prepend-icon="mdi-bank" text="Accounts" value="account"></v-tab>
         <v-tab prepend-icon="mdi-file-document-check-outline" value="imported-files" text="Imported Files"></v-tab>
       </v-tabs>
 
       <v-container fluid>
       <v-tabs-window v-model="tab">
-        <v-tabs-window-item value="option-1">  
+        <v-tabs-window-item value="category">  
             <v-row>
               <v-col 
                 cols="12"
@@ -41,7 +41,11 @@
                 cols="12"
                 md="8"
                 >
-                <v-card v-if="selectedCategory" color="secondary-darken-1" :title="selectedCategory.pk ? 'Edit Category' : 'Add Category'">
+                <v-card 
+                  v-if="selectedCategory" 
+                  color="secondary-darken-1" 
+                  :title="selectedCategory.pk ? 'Edit Category' : 'Add Category'" 
+                  :loading="isSaving">
                   <template v-slot:append>
                     <v-icon icon="mdi-close" @click="selectedCategory = null"></v-icon>
                   </template>                  
@@ -103,20 +107,33 @@
             </v-row>          
         </v-tabs-window-item>
 
-        <v-tabs-window-item value="option-2">
-            <v-row>
-              <v-col :cols="4">
+        <v-tabs-window-item value="merchant">
+          <v-row>
+              <v-col 
+                cols="12"
+                md="4"
+                v-if="!$vuetify.display.mobile || selectedMerchant === null">
                 <v-list :class="$vuetify.display.mobile ? '' : 'main-list-scroll'">
-                  <v-list-item v-for="merchant in merchantStore.merchants" @click="selectedMerchant = merchant">
-                    <v-list-item-title>
-                      {{ merchant.name }}
-                    </v-list-item-title>                   
+                    <v-list-item>
+                      <v-text-field v-model="merchantFilter" density="compact" label="Filter" clearable class="mt-4 mr-2"></v-text-field>                      
+                      <template v-slot:append>
+                        <v-btn @click="addNewMerchant" color="primary">Add New</v-btn>
+                      </template>
+                      
+                    </v-list-item>
+                  <v-list-item v-for="merchant in filteredMerchants" @click="selectedMerchant = merchant" :title="merchant.name">
                   </v-list-item>
                 </v-list>
               </v-col>
-              <v-col :cols="8">
-                <v-card v-if="selectedMerchant" color="secondary-darken-1">
-                  <v-card-title>Edit Merchant</v-card-title>
+              <v-col 
+                cols="12"
+                md="8"
+                >
+                <v-card 
+                  v-if="selectedMerchant" 
+                  color="secondary-darken-1" 
+                  :title="selectedMerchant.pk ? 'Edit Merchant' : 'Add Merchant'"
+                  :loading="isSaving">
                   <v-card-text>
                     <div class="text-overline">Name</div>
                     <v-text-field v-model="selectedMerchant.name"></v-text-field>                  
@@ -131,7 +148,7 @@
             </v-row>
         </v-tabs-window-item>
 
-        <v-tabs-window-item value="option-3">
+        <v-tabs-window-item value="account">
            <v-row>
               <v-col :cols="4">
                 <v-list :class="$vuetify.display.mobile ? '' : 'main-list-scroll'">
@@ -143,8 +160,11 @@
                 </v-list>
               </v-col>
               <v-col :cols="8">
-                <v-card v-if="selectedAccount" color="secondary-darken-1">
-                  <v-card-title>Edit Account</v-card-title>
+                <v-card 
+                  v-if="selectedAccount" 
+                  color="secondary-darken-1"
+                  :title="selectedAccount.pk ? 'Edit Account' : 'Add Account'"
+                  :loading="isSaving">                  
                   <v-card-text>
                     <div class="text-overline">Name</div>
                     <v-text-field v-model="selectedAccount.name"></v-text-field> 
@@ -237,17 +257,21 @@ const categoryReportingTypes : {value: number, description: string}[] = [
 
 const selectedMerchant = ref<Merchant | null>(null);
 const selectedAccount = ref<Account | null>(null);
-const tab = ref("option-1");
+const tab = ref("category");
 const showAddTransactionDialog = ref(false);
 const selectedCategoryTab = ref("general");
 const selectedCategoryTransactions = ref<TransactionSearch[]>([]);
 const selectedCategoryRules = ref<CategoryRule[]>([]);
 const categoryFilter = ref("");
+const merchantFilter = ref("");
+const isSaving = ref(false);
 
 async function saveCategory() {
   if (!selectedCategory.value) return;
 
   try {
+    isSaving.value = true;
+
     if (selectedCategory.value.pk) {
       await new CategoryService().put(selectedCategory.value);
     } else {
@@ -255,8 +279,9 @@ async function saveCategory() {
       categoryStore.categories = await new CategoryService().getMultiple();
       selectedCategory.value = categoryStore.categories.find(x => x.pk === persistedCategory.pk) ?? null;
     }
-  } finally {
     snackbarStore.setMessage("Category successfully saved.", "success");    
+  } finally {
+    isSaving.value = false;
   }
 }
 
@@ -269,13 +294,40 @@ async function deleteCategory() {
 async function saveMerchant() {
   if (!selectedMerchant.value) return;
 
-  await new MerchantService().put(selectedMerchant.value);
+  try {
+    isSaving.value = true;
+
+    if (selectedMerchant.value.pk) {
+      await new MerchantService().put(selectedMerchant.value);
+    } else {
+      const persistedMerchant = await new MerchantService().post(selectedMerchant.value);
+      merchantStore.merchants = await new MerchantService().getMultiple();
+      selectedMerchant.value = merchantStore.merchants.find(x => x.pk === persistedMerchant.pk) ?? null;
+    }
+    snackbarStore.setMessage("Merchant successfully saved.", "success");    
+  } finally {
+    isSaving.value = false;
+  }
+
 }
 
 async function saveAccount() {
   if (!selectedAccount.value) return;
 
-  await new AccountService().put(selectedAccount.value);
+  try {
+    isSaving.value = true;
+
+    if (selectedAccount.value.pk) {
+      await new AccountService().put(selectedAccount.value);
+    } else {
+      const persistedAccount = await new AccountService().post(selectedAccount.value);
+      accountStore.accounts = await new AccountService().getMultiple();
+      selectedAccount.value = accountStore.accounts.find(x => x.pk === persistedAccount.pk) ?? null;
+    }
+    snackbarStore.setMessage("Account successfully saved.", "success");    
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 function getCategoryType(id: number) {
@@ -284,8 +336,7 @@ function getCategoryType(id: number) {
 
 async function convertCategory(): Promise<void> {
   if (!selectedConvertCategory.value) {
-    console.log("please enter a category");
-    
+    snackbarStore.setMessage("Please select a category.", "error");        
     return;
   }
   
@@ -298,9 +349,7 @@ async function convertCategory(): Promise<void> {
       categoryStore.categories = await new CategoryService().getMultiple();
       showConvertCategoryDialog.value = false
       snackbarStore.setMessage("Category successfully merged", "success");
-    });
-
-  
+    });  
 }
 
 function addNewCategory() {
@@ -310,12 +359,17 @@ function addNewCategory() {
   } as Category;
 }
 
+function addNewMerchant() {
+  selectedMerchant.value = { } as Merchant;
+}
+
 function setTransactionToEdit(transaction: TransactionSearch) {
     selectedTransaction.value = transaction;
     showAddTransactionDialog.value = true;
 }
 
 const filteredCategories = computed(() => categoryFilter.value ? categoryStore.categories.filter(x => x.name.toLowerCase().startsWith(categoryFilter.value.toLowerCase())) : categoryStore.categories);
+const filteredMerchants = computed(() => merchantFilter.value ? merchantStore.merchants.filter(x => x.name.toLowerCase().startsWith(merchantFilter.value.toLowerCase())) : merchantStore.merchants);
 
 watch (selectedCategory, () => {
   selectedCategoryTab.value = "general";

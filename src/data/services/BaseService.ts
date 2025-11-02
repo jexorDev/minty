@@ -31,7 +31,7 @@ export default abstract class BaseService<T> {
             if (error.response.status === 401) {
                 router.push("/login");
             } else {
-                this.errorStore.setError(error.response.data);
+                this.errorStore.setError(JSON.stringify(error.response.data));
             }
             return Promise.reject(error);
         })

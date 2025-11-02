@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-type MessageType = "success" | "info" | "";
+type MessageType = "success" | "info" | "error" | "";
 
 export const useSnackbarStore = defineStore('snackbar', () => {
     const message = ref("");

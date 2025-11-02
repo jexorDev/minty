@@ -81,7 +81,7 @@
                       </v-tabs-window-item>
                       <v-tabs-window-item value="transactions">
                         <v-card :class="$vuetify.display.mobile ? '' : 'inner-list-scroll'">
-                          <TransactionsList v-model:selectedTransaction="selectedTransaction" :transactions="selectedCategoryTransactions"></TransactionsList>
+                          <TransactionsList @selected-transaction-changed="setTransactionToEdit" :transactions="selectedCategoryTransactions"></TransactionsList>
                         </v-card>
                       </v-tabs-window-item>
                       <v-tabs-window-item value="rules">
@@ -166,7 +166,7 @@
     <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
 
 
-    <v-dialog v-model="showConvertCategoryDialog">
+    <v-dialog v-model="showConvertCategoryDialog" max-width="600">
       <v-card>
         <v-card-title>Merge Category</v-card-title>
         <v-card-text>
@@ -182,8 +182,8 @@
           </v-row>
         </v-card-text>
         <v-card-actions>          
-          <v-btn @click="showConvertCategoryDialog = false">Cancel</v-btn>
-          <v-btn @click="convertCategory()">Merge</v-btn>
+          <v-btn @click="showConvertCategoryDialog = false" color="primary" variant="tonal">Cancel</v-btn>
+          <v-btn @click="convertCategory()" color="primary" variant="outlined">Merge</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -308,6 +308,11 @@ function addNewCategory() {
     type: 0, 
     reportingType: 0
   } as Category;
+}
+
+function setTransactionToEdit(transaction: TransactionSearch) {
+    selectedTransaction.value = transaction;
+    showAddTransactionDialog.value = true;
 }
 
 const filteredCategories = computed(() => categoryFilter.value ? categoryStore.categories.filter(x => x.name.toLowerCase().startsWith(categoryFilter.value.toLowerCase())) : categoryStore.categories);

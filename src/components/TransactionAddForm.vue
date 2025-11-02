@@ -151,6 +151,7 @@ import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 import {useCategoryStore} from '@/stores/CategoryStore';
 import { useMerchantStore } from '@/stores/MerchantStore';
 import { useAccountStore } from '@/stores/AccountStore';
+import { useSnackbarStore } from '@/stores/SnackbarStore';
 
 const show = defineModel<boolean>("show")
 const tab = ref("option-1");
@@ -168,6 +169,7 @@ const splitEqually = ref(true);
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
+const snackbarStore = useSnackbarStore();
 
 watch(show, async (newValue) => {
   if (!newValue) return;  
@@ -236,6 +238,11 @@ function deleteSplit(split: TransactionSplit) {
 }
 
 async function save() {
+  if (fetchedTransactionSplits.value.length > 0 && remainingSplitAllocation.value !== 0) {
+    snackbarStore.setMessage("Splits must total to original transaction total.", "error");
+    return;
+  }
+
   if (fetchedTransaction.value.pk) {
     await new TransactionsService().put(fetchedTransaction.value);
     await new TransactionSplitsService(fetchedTransaction.value.pk!).postMultiple(fetchedTransactionSplits.value);

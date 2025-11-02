@@ -29,13 +29,16 @@
       </template>
     </v-snackbar>
     <v-dialog v-model="confirmationStore.show" max-width="600">
-      <v-card>
+      <v-card title="Confirm">
+        <template v-slot:append>
+          <v-icon icon="mdi-help-circle-outline" size="x-large"></v-icon>
+        </template>
         <v-card-text>
           {{ confirmationStore.confirmationMessage }}
         </v-card-text>
         <v-card-actions>
-          <v-btn @click="confirmationStore.show=false">Cancel</v-btn>
-          <v-btn @click="confirmationStore.executeConfirmationFunction">Yes</v-btn>
+          <v-btn @click="confirmationStore.show=false" color="primary" variant="tonal">Cancel</v-btn>
+          <v-btn @click="confirmationStore.executeConfirmationFunction" color="primary" variant="outlined">Yes</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

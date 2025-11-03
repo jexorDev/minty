@@ -6,4 +6,5 @@ export default interface ImportedFile {
     minTransactionDate: Date;
     importDate: Date;
     fileType: number;
+    status: number;
 }

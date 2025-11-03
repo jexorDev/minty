@@ -19,33 +19,35 @@
     <v-card-text>                   
       <v-row>
         <v-col>
-          <v-select v-model="selectedImportType" :items="importTypes"></v-select>
+          <v-select v-model="selectedImportType" :items="importFileTypeEnum.getItems()" item-title="description" item-value="value" density="compact"></v-select>
         </v-col>
         <v-col>
           <v-file-input
             v-model="selectedFileUpload"
             label="File input"
+            density="compact"
             ></v-file-input>
         </v-col>
         <v-col>
-          <v-btn @click="parseFile" :loading="loading">Submit</v-btn>
+          <v-btn @click="parseFile" :loading="loading" variant="outlined" color="primary">Submit</v-btn>
         </v-col>
     </v-row>
     <v-row>
       <v-col>
         
-        <v-alert v-if="parsedTransactions.length > 0" color="info" title="Take a look">
-
-                        Does the following look right?
-                        <v-btn @click="uploadFile" variant="text" :loading="loading">Yes, complete uploading file</v-btn>
-                    </v-alert>
+        <v-alert v-if="parsedTransactions.length > 0" color="info" title="Take a look" variant="outlined">
+          <template v-slot:append>
+            <v-btn @click="uploadFile" variant="text" color="primary" :loading="loading" text="Yes, complete uploading file" prepend-icon="mdi-check"></v-btn>
+          </template>
+          Does the following look right?
+          </v-alert>
         <v-data-table :items="parsedTransactions"></v-data-table>
       </v-col>
     </v-row>
   </v-card-text>
 
   <v-card-actions>
-    <v-btn color="primary" variant="tonal" @click="show = false">Close</v-btn>                
+    <v-btn color="primary" variant="tonal" @click="show = false" :loading="loading">Cancel</v-btn>                
   </v-card-actions>  
   </v-card>              
 </v-dialog>
@@ -58,7 +60,8 @@ import { useAccountStore } from '../stores/AccountStore';
 import CategoryService from '@/data/services/CategoryService';
 import MerchantService from '@/data/services/MerchantService';
 import AccountService from '@/data/services/AccountService';
-
+import { useSnackbarStore } from '@/stores/SnackbarStore';
+import ImportFileTypeEnum from '@/data/enumerations/ImportFileType';
 
 interface FileTransaction {
     date: Date;
@@ -78,25 +81,27 @@ const emit = defineEmits<{(e: "refresh"): void}>();
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
+const snackbarStore = useSnackbarStore();
 
 const loading = ref(false);
 const selectedFileUpload = ref<File|null>(null);
-const importTypes = ['Mint', 'Rocket Money', 'Bank of America'];
-const selectedImportType = ref<string>("Mint");
+const importFileTypeEnum = new ImportFileTypeEnum();
+const selectedImportType = ref(importFileTypeEnum.BankOfAmerica.value);
 
 async function parseFile(): Promise<void> {
-  if (selectedFileUpload.value === null) return;
+  if (selectedFileUpload.value === null) {
+    snackbarStore.setMessage("Select a file to upload.", "error");
+    return;
+  }
   
   parsedTransactions.value = [];
 
   const form = new FormData();
-  form.append('csvFile', selectedFileUpload.value);
-  
-  var importType = importTypes.indexOf(selectedImportType.value);
+  form.append('csvFile', selectedFileUpload.value);  
   
   try {
       loading.value = true;
-      parsedTransactions.value = await new GenericService(`files/${importType}/pre`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form) as FileTransaction[];
+      parsedTransactions.value = await new GenericService(`files/${selectedImportType.value}/pre`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form) as FileTransaction[];
   } finally {
     loading.value = false;
   }
@@ -107,12 +112,11 @@ async function parseFile(): Promise<void> {
     
     const form = new FormData();
     form.append('csvFile', selectedFileUpload.value);
-    var importType = importTypes.indexOf(selectedImportType.value);
         
     try {
         loading.value = true;
         
-        await new GenericService(`files/${importType}`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form);        
+        await new GenericService(`files/${selectedImportType.value}`).withHeaders([{headerName: "Content-Type", headerValue: "multipart/form-data"}]).post(form);        
         
         await Promise.all([
           categoryStore.categories = await new CategoryService().getMultiple(),
@@ -120,8 +124,10 @@ async function parseFile(): Promise<void> {
           accountStore.accounts = await new AccountService().getMultiple()
         ]);
         
+        snackbarStore.setMessage("File successfully uploaded.", "success");
         show.value = false;
         emit("refresh");
+
     } finally {
       loading.value = false;
     }

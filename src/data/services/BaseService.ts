@@ -69,6 +69,10 @@ export default abstract class BaseService<T> {
         return res.data as T;
     }
 
+    async delete(): Promise<void> {
+        await this.axiosInstance.delete(this.url);
+    }
+
     withRouteParameter(parameter: string): this {
         this.routeParameter = parameter;
         return this;

@@ -14,78 +14,107 @@
       v-model="tab"
       color="primary"
     >
-      <v-tab prepend-icon="mdi-sitemap-outline" text="General" value="option-1"></v-tab>
-      <v-tab prepend-icon="mdi-point-of-sale" text="Splits" value="option-2"></v-tab>
+      <v-tab prepend-icon="mdi-information-outline" text="General" value="general"></v-tab>
+      <v-tab prepend-icon="mdi-source-fork" text="Splits" value="splits"></v-tab>
     </v-tabs>
 
     <v-container>
-    <v-tabs-window v-model="tab">
-      <v-tabs-window-item value="option-1">
-        <v-row>
-          <v-col
-            cols="12"
-            md="3"
-          >
-           <v-date-input v-model="fetchedTransaction.transactionDate"></v-date-input>
-          </v-col>  
-          <v-col
-            cols="12"
-            md="6"
-          >
-            <v-text-field
-              v-model="fetchedTransaction.description"
-              label="Description"
-              required
-            ></v-text-field>           
-          </v-col>  
-          <v-col
-            cols="12"
-            md="3"
-          >
-            <v-text-field
-              v-model="fetchedTransaction.amount"
-              label="Amount"
-              required
-            ></v-text-field>
-            
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col
-            cols="12"
-            md="4">
-            <v-autocomplete v-model="fetchedTransaction.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk"></v-autocomplete>
-          </v-col>
-          
-          <v-col
-            cols="12"
-            md="4">
-            <v-autocomplete v-model="fetchedTransaction.merchantId" label="Merchant" :items="merchantStore.merchants" item-title="name" item-value="pk"></v-autocomplete>
-          </v-col>
-        
-          <v-col
-            cols="12"
-            md="4">
-            <v-autocomplete v-model="fetchedTransaction.accountId" label="Account" :items="accountStore.accounts" item-title="name" item-value="pk"></v-autocomplete>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-text-field
-              v-model="fetchedTransaction.notes"
-              label="Notes"
-              required
-            ></v-text-field>
-          </v-col>
-        </v-row>
-
-          </v-tabs-window-item>
-          <v-tabs-window-item value="option-2">
-            <div class="d-flex">
+      <v-tabs-window v-model="tab">
+        <v-tabs-window-item value="general">
+          <v-row no-gutters>
+            <v-col>
+              <div class="text-overline">General Info</div>
+            </v-col>
+          </v-row>
+          <v-row>          
+            <v-col
+              cols="12"
+              md="3"
+            >
+            <v-date-input 
+              v-model="fetchedTransaction.transactionDate"
+              variant="outlined"
+              prepend-icon=""
+              prepend-inner-icon="mdi-calendar"
+              ></v-date-input>
+            </v-col>  
+            <v-col
+              cols="12"
+              md="6"
+            >
+              <v-text-field
+                v-model="fetchedTransaction.description"
+                label="Description"
+                required
+                variant="outlined"
+              ></v-text-field>           
+            </v-col>  
+            <v-col
+              cols="12"
+              md="3"
+            >
+              <v-text-field
+                v-model="fetchedTransaction.amount"
+                label="Amount"
+                required 
+                variant="outlined"             
+                prefix="$"
+              ></v-text-field>
               
+            </v-col>
+          </v-row>
+          <v-row no-gutters>
+            <v-col>
+              <div class="text-overline">Supplemental Info</div>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col
+              cols="12"
+              md="6">
+              <v-textarea
+                v-model="fetchedTransaction.notes"
+                label="Notes"
+                required
+                variant="outlined"
+                rows="4"
+              ></v-textarea>
+            </v-col>
+            <v-col
+              cols="12"
+              md="6">
+              <v-autocomplete v-model="fetchedTransaction.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined">
+                <template v-slot:append>
+                  <v-tooltip text="Create new Category" location="top">
+                    <template v-slot:activator="{ props }">                    
+                      <v-btn v-bind="props" @click="openAddDialog('category')" variant="elevated" color="primary" size="xsmall" icon="mdi-plus"></v-btn>
+                    </template>
+                  </v-tooltip>
+                </template>
+              </v-autocomplete>
+              <v-autocomplete v-model="fetchedTransaction.merchantId" label="Merchant" :items="merchantStore.merchants" item-title="name" item-value="pk" variant="outlined">
+                <template v-slot:append>
+                  <v-tooltip text="Create new Merchant" location="top">
+                    <template v-slot:activator="{ props }">                    
+                      <v-btn v-bind="props" @click="openAddDialog('merchant')" variant="elevated" color="primary" size="xsmall" icon="mdi-plus"></v-btn>
+                    </template>
+                  </v-tooltip>
+                </template>
+              </v-autocomplete>
+              <v-autocomplete v-model="fetchedTransaction.accountId" label="Account" :items="accountStore.accounts" item-title="name" item-value="pk" variant="outlined">
+                <template v-slot:append>
+                  <v-tooltip text="Create new Account" location="top">
+                    <template v-slot:activator="{ props }">                    
+                      <v-btn v-bind="props" @click="openAddDialog('account')" variant="elevated" color="primary" size="xsmall" icon="mdi-plus"></v-btn>
+                    </template>
+                  </v-tooltip>
+                </template>
+              </v-autocomplete>
+            </v-col>
+          </v-row>
 
-            </div>
-            
+        </v-tabs-window-item>
+          <v-tabs-window-item value="splits">            
             <v-row>
               <v-col
                 cols="12"
@@ -93,21 +122,28 @@
                 <v-card max-width="800">
                   <v-toolbar color="secondary-darken-1" density="compact" class="mb-2">
                     <v-checkbox v-model="splitEqually" label="Split Equally" class="mt-5"></v-checkbox>
-                    <v-spacer></v-spacer>
-                    <v-btn @click="addNew()" variant="elevated" color="primary">Add Split</v-btn>
+                    <v-spacer></v-spacer>                                        
+                    <v-btn @click="addNew()" variant="elevated" color="primary" append-icon="mdi-source-fork">Add</v-btn>
                   </v-toolbar>
-                  <v-row v-for="split of fetchedTransactionSplits">
+                  <v-row v-for="split of fetchedTransactionSplits" no-gutters>
                     <v-col cols="7">
-                      <v-select label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk"></v-select>
+                      <v-autocomplete label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk" density="compact" clearable variant="outlined" class="mr-1">
+                        <template v-if="!split.categoryId" v-slot:prepend-inner>
+                           <v-tooltip  text="Create new Category" location="top">
+                            <template v-slot:activator="{ props }">                    
+                              <v-btn v-bind="props" @click="openAddDialog('category')" variant="elevated" color="primary" size="xsmall" icon="mdi-plus"></v-btn>
+                            </template>
+                          </v-tooltip>
+                        </template>                                                                        
+                      </v-autocomplete>
                     </v-col>
-                    <v-col cols="4">
-                      <!-- <v-combobox v-model="split.amount" hide-no-data :items="splitAmountAutoComplete"></v-combobox> -->
-                       <v-text-field v-model="split.amount" prefix="$" :append-inner-icon="$vuetify.display.mobile || remainingSplitAllocation <= 0 ? '' : 'mdi-arrow-collapse-up'" v-on:click:append-inner="allocateRemainingToSplit(split)"></v-text-field>
-                      
-                    </v-col>
-                    <v-col cols="1">
-                      <v-btn @click="deleteSplit(split)" color="secondary" class="mt-3" icon="mdi-close" variant="text"></v-btn>
-                    </v-col>
+                    <v-col cols="5">
+                       <v-text-field v-model="split.amount" prefix="$" :append-inner-icon="$vuetify.display.mobile || remainingSplitAllocation <= 0 ? '' : 'mdi-arrow-collapse-up'" v-on:click:append-inner="allocateRemainingToSplit(split)" density="compact" variant="outlined">
+                        <template v-slot:append>
+                          <v-btn @click="deleteSplit(split)" color="secondary" icon="mdi-close" variant="text" size="xsmall"></v-btn>
+                        </template>
+                       </v-text-field>
+                    </v-col>                    
                   </v-row> 
                 </v-card>
               </v-col>
@@ -119,27 +155,32 @@
                     <div class="text-overline">Transaction Total</div>
                     <div>${{ fetchedTransaction.amount }}</div>
                     <div class="text-overline">Remaining Allocation</div>
-                    <div>${{ remainingSplitAllocation }} <v-icon v-if="remainingSplitAllocation !== fetchedTransaction.amount" :icon="remainingSplitAllocation === 0 ? 'mdi-check' : 'mdi-alert'" :color="remainingSplitAllocation === 0 ? 'success' : 'warning'"></v-icon></div>
-                      
+                    <div>${{ remainingSplitAllocation }} <v-icon v-if="remainingSplitAllocation !== fetchedTransaction.amount" :icon="remainingSplitAllocation === 0 ? 'mdi-check' : 'mdi-alert'" :color="remainingSplitAllocation === 0 ? 'success' : 'warning'"></v-icon></div>                      
                   </v-card-text>
                 </v-card>
               </v-col>
             </v-row>  
-        
- 
-      
           </v-tabs-window-item>
           </v-tabs-window>
         </v-container>
-     
-       
           <v-card-actions>
             <v-btn color="primary" variant="tonal" @click="show = false">Cancel</v-btn>
-            <v-btn color="primary" variant="outlined" text="Save" @click="save"></v-btn>
+            <v-btn color="primary" variant="outlined" text="Save" @click="save()"></v-btn>
           </v-card-actions>  
       </v-card>
-  
-
+      <v-dialog v-model="showAddDialog" max-width="600">
+        <v-card :title="`Add new ${newCategory ? 'Category' : (newMerchant ? 'Merchant' : 'Account')}`" color="secondary-darken-1">
+          <v-card-text>
+            <CategoryAddEditForm v-if="newCategory" v-model:category="newCategory"></CategoryAddEditForm>
+            <MerchantAddEditForm v-if="newMerchant" v-model:merchant="newMerchant"></MerchantAddEditForm>
+            <AccountAddEditForm v-if="newAccount" v-model:account="newAccount"></AccountAddEditForm>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn variant="tonal" color="primary" @click="closeAddDialog()">Cancel</v-btn>
+            <v-btn variant="outlined" color="primary" @click="saveAddDialog()">Save</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 </v-dialog>
 </template>
 <script setup lang="ts">
@@ -152,9 +193,15 @@ import {useCategoryStore} from '@/stores/CategoryStore';
 import { useMerchantStore } from '@/stores/MerchantStore';
 import { useAccountStore } from '@/stores/AccountStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
+import type Category from '@/data/interfaces/Category';
+import CategoryService from '@/data/services/CategoryService';
+import type Merchant from '@/data/interfaces/Merchant';
+import type Account from '@/data/interfaces/Account';
+import MerchantService from '@/data/services/MerchantService';
+import AccountService from '@/data/services/AccountService';
 
 const show = defineModel<boolean>("show")
-const tab = ref("option-1");
+const tab = ref<"general" | "splits">("general");
 
 const props = defineProps<{
   transaction?: TransactionSearch
@@ -164,18 +211,26 @@ const emit = defineEmits<{(e: "refresh"): void}>();
 
 const fetchedTransaction = ref<Transaction>({} as Transaction);
 const fetchedTransactionSplits = ref<TransactionSplit[]>([] as TransactionSplit[]);
-
+const isSaving = ref(false);
+const showAddDialog = ref(false);
 const splitEqually = ref(true);
+
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
 const snackbarStore = useSnackbarStore();
 
+const newCategory = ref<Category | undefined>(undefined);
+const newMerchant = ref<Merchant | undefined>(undefined);
+const newAccount = ref<Account | undefined>(undefined);
+
 watch(show, async (newValue) => {
   if (!newValue) return;  
 
-  tab.value = "option-1";
-  fetchedTransaction.value = {} as TransactionSearch;
+  tab.value = "general";
+  fetchedTransaction.value = {
+    amount: 0
+  } as TransactionSearch;
   fetchedTransactionSplits.value = [];
 
   if (props.transaction) {
@@ -183,11 +238,65 @@ watch(show, async (newValue) => {
     if (props.transaction.splitId) {
       fetchedTransactionSplits.value = await new TransactionSplitsService(props.transaction.splitId).getMultiple();
       if (fetchedTransactionSplits.value.length > 0) {
-        tab.value = "option-2";
+        tab.value = "splits";
       }
     } 
   }
 }, {deep: true})
+
+async function saveAddDialog() {  
+  try {
+    isSaving.value = true;
+
+    if (newCategory.value) {
+      const persistedCategory = await new CategoryService().post(newCategory.value);
+      categoryStore.categories.push(persistedCategory);
+      if (tab.value === "general") {
+        fetchedTransaction.value.categoryId = persistedCategory.pk;
+      } else {
+        const firstSplit = fetchedTransactionSplits.value.find(x => x.categoryId === undefined);
+        if (firstSplit) {
+          firstSplit.categoryId = persistedCategory.pk!;
+        }
+      }
+    } else if (newMerchant.value) {
+      const persistedMerchant = await new MerchantService().post(newMerchant.value);
+      merchantStore.merchants.push(persistedMerchant);
+      fetchedTransaction.value.merchantId = persistedMerchant.pk;
+    } else if (newAccount.value) {
+      const persistedAccount = await new AccountService().post(newAccount.value);
+      accountStore.accounts.push(persistedAccount);
+      fetchedTransaction.value.accountId = persistedAccount.pk;
+    }
+
+    snackbarStore.setMessage("Successfully saved.", "success");    
+    closeAddDialog();
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+function openAddDialog(type: "category" | "merchant" | "account") {
+  if (type === "category") {
+    newCategory.value = {
+      type: 0,
+      reportingType: 0
+    } as Category;
+  } else if (type === "merchant") {
+    newMerchant.value = {} as Merchant;
+  } else if (type === "account") {
+    newAccount.value = {} as Account;
+  }
+
+  showAddDialog.value = true;
+}
+
+function closeAddDialog() {
+  newCategory.value = undefined;
+  newMerchant.value = undefined;
+  newAccount.value = undefined;
+  showAddDialog.value = false;
+}
 
 
 function addNew() {

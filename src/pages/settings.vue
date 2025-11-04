@@ -32,7 +32,7 @@
                       {{ category.name }}
                     </v-list-item-title>
                     <v-list-item-subtitle>                      
-                      {{  getCategoryType(category.type)?.description }}
+                      {{ categoryTypeEnum.getItemByValue(category.type)?.description }}
                     </v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
@@ -57,31 +57,7 @@
                   <v-card-text>
                     <v-tabs-window v-model="selectedCategoryTab">
                       <v-tabs-window-item value="general">
-                        <div class="text-overline">Name</div>
-                          <v-text-field v-model="selectedCategory.name"></v-text-field>     
-                        <div class="text-overline">Type</div>
-                        <v-btn-toggle 
-                        v-model="selectedCategory.type" 
-                         base-color="secondary"
-                        color="primary"
-                        density="compact"
-                        mandatory>
-                          <v-btn>Expense</v-btn>
-                          <v-btn>Income</v-btn> 
-                          <v-btn>Transfer</v-btn>     
-                        </v-btn-toggle>    
-                        <div class="text-overline">Statistics</div>
-                        <v-btn-toggle 
-                        v-model="selectedCategory.reportingType" 
-                         base-color="secondary"
-                        color="primary"
-                        density="compact"
-                        mandatory>
-                          <v-btn>Always Include</v-btn>
-                          <v-btn>Exclude by Default</v-btn>
-                          <v-btn>Always Exclude</v-btn>
-    
-                        </v-btn-toggle>                   
+                        <CategoryAddEditForm v-model:category="selectedCategory"></CategoryAddEditForm>
                       </v-tabs-window-item>
                       <v-tabs-window-item value="transactions">
                         <v-card :class="$vuetify.display.mobile ? '' : 'inner-list-scroll'">
@@ -134,9 +110,11 @@
                   color="secondary-darken-1" 
                   :title="selectedMerchant.pk ? 'Edit Merchant' : 'Add Merchant'"
                   :loading="isSaving">
+                   <template v-slot:append>
+                    <v-icon icon="mdi-close" @click="selectedMerchant = null"></v-icon>
+                  </template>         
                   <v-card-text>
-                    <div class="text-overline">Name</div>
-                    <v-text-field v-model="selectedMerchant.name"></v-text-field>                  
+                      <MerchantAddEditForm v-model:merchant="selectedMerchant"></MerchantAddEditForm>
                   </v-card-text>
                   <v-card-actions>
                     <v-btn :disabled="!selectedMerchant.pk" color="primary-darken-1">Delete</v-btn>                    
@@ -165,9 +143,11 @@
                   color="secondary-darken-1"
                   :title="selectedAccount.pk ? 'Edit Account' : 'Add Account'"
                   :loading="isSaving">                  
+                   <template v-slot:append>
+                    <v-icon icon="mdi-close" @click="selectedAccount = null"></v-icon>
+                    </template>         
                   <v-card-text>
-                    <div class="text-overline">Name</div>
-                    <v-text-field v-model="selectedAccount.name"></v-text-field> 
+                    <AccountAddEditForm v-model:account="selectedAccount"></AccountAddEditForm>
                   </v-card-text>
                   <v-card-actions>
                     <v-btn :disabled="!selectedAccount.pk" color="primary-darken-1">Delete</v-btn>                    
@@ -230,6 +210,7 @@ import type CategoryRule from '@/data/interfaces/CategoryRule';
 import CategoryRuleService from '@/data/services/CategoryRuleService';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
+import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
@@ -244,17 +225,8 @@ const selectedTransaction = ref<TransactionSearch>({} as TransactionSearch);
 const selectedCategory = ref<Category | null>(null);
 const selectedConvertCategory = ref<Category | null>(null);
 const showConvertCategoryDialog = ref(false);
-const categoryTypes : {value: number, description: string}[] = [
-  {value: 0, description: "Expense"},
-  {value: 1, description: "Income"},
-  {value: 2, description: "Transfer"}
-];
-const categoryReportingTypes : {value: number, description: string}[] = [
-  {value: 0, description: "Include"},
-  {value: 1, description: "Exclude by Default"},
-  {value: 2, description: "Exclude Always"}
-];
 
+const categoryTypeEnum = new CategoryTypeEnum();
 const selectedMerchant = ref<Merchant | null>(null);
 const selectedAccount = ref<Account | null>(null);
 const tab = ref("category");
@@ -328,10 +300,6 @@ async function saveAccount() {
   } finally {
     isSaving.value = false;
   }
-}
-
-function getCategoryType(id: number) {
-  return categoryTypes.find(x => x.value === id);
 }
 
 async function convertCategory(): Promise<void> {

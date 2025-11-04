@@ -46,9 +46,7 @@
             divided
             density="compact"
           >
-          <v-radio label="Always include" :value="0"></v-radio>
-          <v-radio label="Exclude by default" :value="1"></v-radio>
-          <v-radio label="Always exclude" :value="2"></v-radio>
+          <v-radio v-for="enumItem in categoryReportingTypeEnum.getItems()" :label="enumItem.description" :value="enumItem.value"></v-radio>          
         </v-radio-group>
         <v-btn @click="reportingType = null" density="compact" color="secondary" variant="text">Reset reporting type</v-btn>
       </v-list-item>
@@ -120,6 +118,7 @@ import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthT
 import StatisticsService from '@/data/services/StatisticsService';
 import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposable';
 import { useDisplay } from 'vuetify';
+import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
 
   interface AutoCompleteObject {
     type: string;
@@ -127,6 +126,7 @@ import { useDisplay } from 'vuetify';
     value: number | string;
   }
   
+  const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
   const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);

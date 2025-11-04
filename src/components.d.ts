@@ -7,11 +7,14 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AccountAddEditForm: typeof import('./components/AccountAddEditForm.vue')['default']
     AppFooter: typeof import('./components/AppFooter.vue')['default']
+    CategoryAddEditForm: typeof import('./components/CategoryAddEditForm.vue')['default']
     Dashboard: typeof import('./components/Dashboard.vue')['default']
     DialogBase: typeof import('./components/DialogBase.vue')['default']
     FileUploadDialog: typeof import('./components/FileUploadDialog.vue')['default']
     ImportedFiles: typeof import('./components/ImportedFiles.vue')['default']
+    MerchantAddEditForm: typeof import('./components/MerchantAddEditForm.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TransactionAddForm: typeof import('./components/TransactionAddForm.vue')['default']

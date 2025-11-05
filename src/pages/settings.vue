@@ -61,13 +61,40 @@
                       </v-tabs-window-item>
                       <v-tabs-window-item value="transactions">
                         <v-card :class="$vuetify.display.mobile ? '' : 'inner-list-scroll'">
-                          <TransactionsList @selected-transaction-changed="setTransactionToEdit" :transactions="selectedCategoryTransactions"></TransactionsList>
+                          <TransactionsList v-if="selectedCategoryTransactions" @selected-transaction-changed="setTransactionToEdit" :transactions="selectedCategoryTransactions"></TransactionsList>
                         </v-card>
                       </v-tabs-window-item>
                       <v-tabs-window-item value="rules">
-                        <v-card>
-                          <v-data-table :items="selectedCategoryRules"></v-data-table>
-                        </v-card>
+                        <div>
+                          <v-icon icon="mdi-information-outline"></v-icon>
+                          Any match on rules will map transactions to this category during a file import
+                        </div>
+                        <v-divider thickness="2" class="my-2" color="white"></v-divider>
+                        <div class="d-flex flex-wrap">
+                            <v-chip v-for="rule in selectedCategoryRules"
+                              class="mr-2 mt-1"
+                              color="secondary-lighten-1"
+                              variant="outlined"
+                              label
+                              size="large"
+                              closable
+                              @click:close="removeCategoryRule(rule)">
+                              {{ rule }}
+                            </v-chip>
+                          
+                          <v-text-field 
+                            v-model="categoryRuleText"                            
+                            class="mt-1"
+                            variant="outlined" 
+                            density="compact" 
+                            max-width="250" 
+                            min-width="200"
+                            append-inner-icon="mdi-plus"
+                            @click:append-inner="addNewCategoryRule">                            
+                          </v-text-field>
+
+                        </div>
+                        
                       </v-tabs-window-item>
                     </v-tabs-window> 
                     
@@ -232,10 +259,11 @@ const selectedAccount = ref<Account | null>(null);
 const tab = ref("category");
 const showAddTransactionDialog = ref(false);
 const selectedCategoryTab = ref("general");
-const selectedCategoryTransactions = ref<TransactionSearch[]>([]);
-const selectedCategoryRules = ref<CategoryRule[]>([]);
+const selectedCategoryTransactions = ref<TransactionSearch[] | undefined>(undefined);
+const selectedCategoryRules = ref<string[] | undefined>(undefined);
 const categoryFilter = ref("");
 const merchantFilter = ref("");
+const categoryRuleText = ref("");
 const isSaving = ref(false);
 
 async function saveCategory() {
@@ -245,10 +273,15 @@ async function saveCategory() {
     isSaving.value = true;
 
     if (selectedCategory.value.pk) {
-      await new CategoryService().put(selectedCategory.value);
+      await Promise.all([
+        new CategoryService().put(selectedCategory.value),
+        selectedCategoryRules.value === undefined 
+          ? null 
+          : new CategoryRuleService(selectedCategory.value!.pk!).postMultiple(selectedCategoryRules.value)
+      ]);      
     } else {
       const persistedCategory = await new CategoryService().post(selectedCategory.value);
-      categoryStore.categories = await new CategoryService().getMultiple();
+      categoryStore.categories = await new CategoryService().getMultiple();      
       selectedCategory.value = categoryStore.categories.find(x => x.pk === persistedCategory.pk) ?? null;
     }
     snackbarStore.setMessage("Category successfully saved.", "success");    
@@ -320,6 +353,22 @@ async function convertCategory(): Promise<void> {
     });  
 }
 
+function addNewCategoryRule() {
+  if (categoryRuleText.value === "") return;
+
+  selectedCategoryRules.value!.push(categoryRuleText.value);
+  categoryRuleText.value = "";
+}
+
+function removeCategoryRule(rule: string): void {
+  if (selectedCategoryRules.value){
+    const index = selectedCategoryRules.value.indexOf(rule);
+    if (index >= 0) {
+      selectedCategoryRules.value.splice(index, 1);
+    }
+  }
+}
+
 function addNewCategory() {
   selectedCategory.value = {
     type: 0, 
@@ -340,24 +389,26 @@ const filteredCategories = computed(() => categoryFilter.value ? categoryStore.c
 const filteredMerchants = computed(() => merchantFilter.value ? merchantStore.merchants.filter(x => x.name.toLowerCase().startsWith(merchantFilter.value.toLowerCase())) : merchantStore.merchants);
 
 watch (selectedCategory, () => {
-  selectedCategoryTab.value = "general";
+  selectedCategoryTab.value = "general"
+  selectedCategoryTransactions.value = undefined;
+  selectedCategoryRules.value = undefined;
 })
 
 watch(selectedCategoryTab, async () => {
   if (!selectedCategory.value?.pk) return;
-  if (selectedCategoryTab.value === "transactions") {
+  if (selectedCategoryTab.value === "transactions" && selectedCategoryTransactions.value === undefined) {
     selectedCategoryTransactions.value = await new TransactionSearchService()
     .withUrlParameters({
       "categoryId": selectedCategory.value?.pk
     }).getMultiple();
-  } else if (selectedCategoryTab.value === "rules") {
+  } else if (selectedCategoryTab.value === "rules" && selectedCategoryRules.value === undefined) {
     selectedCategoryRules.value = await new CategoryRuleService(selectedCategory.value.pk).getMultiple();
   }
 
   
 })
 
-  watch(selectedTransaction, () => showAddTransactionDialog.value = true);
+watch(selectedTransaction, () => showAddTransactionDialog.value = true);
 
 </script>
 <style scoped>

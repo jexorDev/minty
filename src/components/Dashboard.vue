@@ -20,9 +20,9 @@
             ></v-progress-linear>
             <div class="d-flex justify-space-between pt-1">
               <span class="font-weight-medium">
-                ${{ totalExpensesCurrentYear }}
+                {{ formatNumber(totalExpensesCurrentYear, NumberFormats.Price) }}
               </span>
-              <span class="text-medium-emphasis"> ${{ totalExpensesPreviousYear }} </span>
+              <span class="text-medium-emphasis"> {{ formatNumber(totalExpensesPreviousYear, NumberFormats.Price) }} </span>
             </div>
           </v-card-text>
         </v-card>
@@ -45,9 +45,11 @@
             ></v-progress-linear>
             <div class="d-flex justify-space-between pt-1">
               <span class="font-weight-medium">
-                ${{ totalIncomeCurrentYear * -1 }}
+                {{ formatNumber(totalIncomeCurrentYear * -1, NumberFormats.Price) }}
               </span>
-              <span class="text-medium-emphasis"> ${{ totalIncomePreviousYear * -1 }} </span>
+              <span class="text-medium-emphasis"> 
+                {{ formatNumber(totalIncomePreviousYear * -1, NumberFormats.Price) }} 
+              </span>
             </div>
           
           </v-card-text>
@@ -82,14 +84,15 @@ import StatisticsService from '@/data/services/StatisticsService';
 import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposable';
 import { useSpendingAreaChart } from '@/composables/SpendingAreaChartComposable';
 import { useSpendingTreemapChart } from '@/composables/SpendingTreemapChartComposable';
+import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 
 const selectedCurrentYear = ref(2025);
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 
-const totalExpensesCurrentYear = computed(() => Math.round(categoryMonthTotals.value.filter(x => x.categoryType === 0 &&  x.reportingType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0) * 100) / 100);
-const totalExpensesPreviousYear = computed(() => Math.round(categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0) * 100) / 100);
-const totalIncomeCurrentYear = computed(() => Math.round(categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.reportingType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0) * 100 / 100));
-const totalIncomePreviousYear = computed(() => Math.round(categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.reportingType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0) * 100) / 100);
+const totalExpensesCurrentYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 0 &&  x.reportingType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0));
+const totalExpensesPreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
+const totalIncomeCurrentYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.reportingType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0));
+const totalIncomePreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.reportingType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
 
 const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedCurrentYear);
 const {options: spendingAreaChartOptions, series: spendingAreaChartSeries} = useSpendingAreaChart(categoryMonthTotals, selectedCurrentYear.value, selectedCurrentYear.value - 1);

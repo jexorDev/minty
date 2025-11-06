@@ -101,7 +101,6 @@ import TransactionModel from '@/data/classes/TransactionModel';
 import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
 import ModelList from '@/data/classes/ModelList';
 import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSplit';
-import dayjs from 'dayjs';
 import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 import {useCategoryStore} from '@/stores/CategoryStore';
 import TransactionSearchService from '@/data/services/TransactionSearchService';
@@ -112,6 +111,8 @@ import StatisticsService from '@/data/services/StatisticsService';
 import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposable';
 import { useDisplay } from 'vuetify';
 import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
+import { getCurrentDate, getCurrentMonth, getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
+import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
 
   interface AutoCompleteObject {
     type: string;
@@ -126,7 +127,7 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
   const searchItems = ref<Transaction[]>([])
   //const categories = ref<Category[]>([]);
   const selectedFilter = ref<AutoCompleteObject | null>(null);
-  const fromDate = ref(Date.now().toString())
+  const fromDate = ref(getCurrentDate());
   const searchString = ref("");
   const showAddTransactionDialog = ref(false);
   const loading = ref(false);  
@@ -140,7 +141,7 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
   const noResults = ref(false);
   
   const showUploadDialog = ref(false);
-  const selectedMonth = ref(dayjs().month());
+  const selectedMonth = ref(getCurrentMonth());
   const categoryStore = useCategoryStore();
   const { mobile } = useDisplay()
 
@@ -154,7 +155,7 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
   let timerId: number | null = null;
   
   onMounted(async () => {
-    for (var year = 2014; year <= dayjs().year(); year++) {
+    for (var year = 2014; year <= getCurrentYear(); year++) {
       years.value.push(year);
     }
     
@@ -163,8 +164,8 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
   });
 
   async function getData(): Promise<void> {
-    const fromDate = `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-01`;
-    const toDate = `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-${dayjs(fromDate).daysInMonth()}`;
+    const fromDate = createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO);
+    const toDate = createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate), DateFormats.ISO);
 
     Promise.all([
       transactions.value = await new TransactionSearchService()
@@ -217,10 +218,6 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
   const filteredTransactions = computed(() => transactions.value
     .filter(x => reportingType.value === null || x.categoryReportingType === reportingType.value)
     .filter(x => filterCategoryId.value === null || x.categoryId === filterCategoryId.value));
-
-  function formatDate(date: string | Date): string {
-    return dayjs(date).format("MM/DD/YYYY")
-  }
 
   watch(selectedYear, async (newValue, oldValue) => {
     await getData();

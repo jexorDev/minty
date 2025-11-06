@@ -10,7 +10,7 @@
             <template v-slot:append>
               <v-list-item-action class="flex-column align-end">
                 <small>{{ formatDate(transaction.transactionDate) }}</small>
-                <div>{{ transaction.amount }}</div>
+                <div>{{ formatNumber(transaction.amount, NumberFormats.Price) }}</div>
               </v-list-item-action>
             </template>
           </v-list-item>
@@ -18,7 +18,8 @@
 </template> 
 <script setup lang="ts">
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
-import dayjs from 'dayjs';
+import { NumberFormats, formatNumber } from '@/utilities/NumberFormattingUtility';
+import { formatDate } from '@/utilities/DateFormattingUtility';
 
 const props = defineProps<{
   transactions: TransactionSearch[]
@@ -27,9 +28,5 @@ const props = defineProps<{
 const emits = defineEmits<{
   (e: "selectedTransactionChanged", value: TransactionSearch): void
 }>();
-
-function formatDate(date: string | Date): string {
-  return dayjs(date).format("MM/DD/YYYY")
-}
 
 </script>

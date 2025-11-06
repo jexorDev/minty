@@ -12,17 +12,17 @@
                     <v-row>
                         <v-col>
                             <div class="text-overline">Imported</div>
-                            <div>{{ file.importDate }}</div>
+                            <div>{{ formatDate(file.importDate, DateFormats.WithTime) }}</div>
                         </v-col>
                     </v-row>
                     <v-row>
                         <v-col>
                             <div class="text-overline">Min trans date</div>
-                            <div>{{ file.minTransactionDate }}</div>
+                            <div>{{ formatDate(file.minTransactionDate) }}</div>
                         </v-col>
                         <v-col>
                             <div class="text-overline">Max trans date</div>
-                            <div>{{ file.maxTransactionDate }}</div>
+                            <div>{{ formatDate(file.maxTransactionDate) }}</div>
                         </v-col>
                     </v-row>                    
                 </v-card-text>
@@ -42,6 +42,7 @@ import ImportedFileService from '@/data/services/ImportedFileService';
 import ImportFileTypeEnum from '@/data/enumerations/ImportFileType';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { formatDate, DateFormats } from '@/utilities/DateFormattingUtility';
 
 const confirmationStore = useConfirmationStore();
 const snackbarStore = useSnackbarStore();

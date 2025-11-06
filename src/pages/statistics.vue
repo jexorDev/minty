@@ -44,7 +44,7 @@
         const data: number[] = [];
 
         for (var i = 1; i <= 12; i++) {
-            data.push(filteredCategoryMonthTotals.value.filter(x => x.categoryType === 0 && x.month === i).reduce((acc, curr) => { return acc + curr.total}, 0));
+            data.push(filteredCategoryMonthTotals.value.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.month === i).reduce((acc, curr) => { return acc + curr.total}, 0));
         }
 
         return data;

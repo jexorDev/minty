@@ -291,8 +291,16 @@ async function saveCategory() {
 }
 
 async function deleteCategory() {
-  confirmationStore.setConfirmation("Are you sure you want to delete this category?", async () => {
-    snackbarStore.setMessage("This doesn't work yet", "info");
+  confirmationStore.setConfirmation("Are you sure you want to delete this category? Any transactions with this category will have it removed.", async () => {
+    try {
+      isSaving.value = true;
+      await new CategoryService().withRouteParameter(selectedCategory.value!.pk!.toString()).delete();
+      categoryStore.categories = await new CategoryService().getMultiple();      
+      selectedCategory.value = null;
+      snackbarStore.setMessage("Category successfully deleted.", "success");    
+    } finally {
+      isSaving.value = false;
+    }
   });
 }
 

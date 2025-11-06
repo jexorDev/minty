@@ -72,7 +72,8 @@
         <apexchart  :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
       </v-card>
       <v-card>
-        <v-data-table :items="tableData" :headers="headers"></v-data-table>
+        
+        <v-data-table :items="tableData" :headers="headers" density="compact"></v-data-table>
       </v-card>
     </v-col>
   </v-row>
@@ -80,37 +81,29 @@
   <v-fab :app="true"  icon="mdi-plus" color="primary">
     <v-icon>$plus</v-icon>
     <v-speed-dial  activator="parent">
-    <v-btn key="1" color="primary" @click="showUploadDialog = true">
-            File
-    </v-btn>
+      <v-btn key="1" color="primary" @click="showUploadDialog = true" text="File"></v-btn>
+      <v-btn key="2" color="primary" @click="setTransactionToEdit()" text="Single"></v-btn>          
+    </v-speed-dial>
+  </v-fab>
 
-          <v-btn key="2" color="primary" @click="setTransactionToEdit()">
-            Single
-          </v-btn>
-
-          
-        </v-speed-dial>
-        </v-fab>
-
-    <TransactionAddForm :key="addFormKey" :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="getData"></TransactionAddForm>
-
-    <FileUploadDialog v-model="showUploadDialog" @refresh="getData"></FileUploadDialog>
+  <TransactionAddForm :key="addFormKey" :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="getData"></TransactionAddForm>
+  <FileUploadDialog v-model="showUploadDialog" @refresh="getData"></FileUploadDialog>
     
-  </template>
+</template>
   
-  <script setup lang="ts">
-  import { provide } from 'vue';
-  import type Transaction from '@/data/interfaces/Transactions/Transaction';
-  import type Category from '@/data/interfaces/Category';
-  import TransactionsService from '@/data/services/TransactionsService';
-  import CategoryService from '@/data/services/CategoryService'; 
+<script setup lang="ts">
+import { provide } from 'vue';
+import type Transaction from '@/data/interfaces/Transactions/Transaction';
+import type Category from '@/data/interfaces/Category';
+import TransactionsService from '@/data/services/TransactionsService';
+import CategoryService from '@/data/services/CategoryService'; 
 import TransactionModel from '@/data/classes/TransactionModel';
 import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
 import ModelList from '@/data/classes/ModelList';
 import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSplit';
-  import dayjs from 'dayjs';
+import dayjs from 'dayjs';
 import TransactionSplitsService from '@/data/services/TransactionSplitsService';
-  import {useCategoryStore} from '@/stores/CategoryStore';
+import {useCategoryStore} from '@/stores/CategoryStore';
 import TransactionSearchService from '@/data/services/TransactionSearchService';
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import FileUploadService from '@/data/services/FileUploadService';
@@ -139,7 +132,7 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
   const loading = ref(false);  
   //provide('show', show);
   //provide('loading', loading);
-  const selectedYear = ref(dayjs().year());
+  const selectedYear = ref(2025);
   const years = ref<number[]>([]);
   const transactionModel = ref<TransactionSearch>({} as TransactionSearch);
   const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();  
@@ -156,7 +149,7 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
   const filterCategoryId = ref<number | null>(null);
   const showFilterDrawer = ref(true);
 
-  const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedYear.value);
+  const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedYear);
   
   let timerId: number | null = null;
   
@@ -173,16 +166,18 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
     const fromDate = `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-01`;
     const toDate = `${selectedYear.value}-${(selectedMonth.value + 1).toString().padStart(2, '0')}-${dayjs(fromDate).daysInMonth()}`;
 
-    transactions.value = await new TransactionSearchService()
-      .withUrlParameters({
-        fromDate: fromDate,
-        toDate: toDate
-      }).getMultiple();
-
-        categoryMonthTotals.value = await new StatisticsService().withUrlParameters({
-    "fromDate": fromDate,
-    "toDate": toDate
-  }).getMultiple();
+    Promise.all([
+      transactions.value = await new TransactionSearchService()
+        .withUrlParameters({
+          fromDate: fromDate,
+          toDate: toDate
+        }).getMultiple(),
+      categoryMonthTotals.value = await new StatisticsService()
+        .withUrlParameters({
+          fromDate: fromDate,
+          toDate: toDate
+        }).getMultiple()
+    ]);
   }
 
   function searchUpdate(searchString: string): void {

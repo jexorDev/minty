@@ -8,7 +8,9 @@ export function useAreaChart(xAxisCategories: Ref<string[]>) {
               zoom: {
                 enabled: false
               },
-              
+              toolbar: {
+                show: false
+              }
             },
             colors: ['#50C878', '#6C3BAA'],
             theme: {

@@ -2,12 +2,12 @@ import type CategoryMonthTotal from "@/data/interfaces/Statistics/CategoryMonthT
 import { useDonutChart } from "./DonutChartComposable";
 import type { Ref } from "vue";
 
-export function useSpendingDonutChart(data: Ref<CategoryMonthTotal[]>, year: number) {
+export function useSpendingDonutChart(data: Ref<CategoryMonthTotal[]>, year: Ref<number>) {
     
     const {options} = useDonutChart();
 
     const series = computed(() => [{
-        data: getChartData(toValue(data), year)
+        data: getChartData(toValue(data), toValue(year))
     }]);
 
     return {options, series}

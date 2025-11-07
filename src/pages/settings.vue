@@ -190,7 +190,7 @@
         </v-tabs-window-item>
       </v-tabs-window>     
 
-    <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" ></TransactionAddForm>
+    <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="setSelectedCategoryTransactions"></TransactionAddForm>
 
 
     <v-dialog v-model="showConvertCategoryDialog" max-width="600">
@@ -393,6 +393,13 @@ function setTransactionToEdit(transaction: TransactionSearch) {
     showAddTransactionDialog.value = true;
 }
 
+async function setSelectedCategoryTransactions() {
+  selectedCategoryTransactions.value = await new TransactionSearchService()
+    .withUrlParameters({
+      "categoryId": selectedCategory.value?.pk
+    }).getMultiple();
+}
+
 const filteredCategories = computed(() => categoryFilter.value ? categoryStore.categories.filter(x => x.name.toLowerCase().startsWith(categoryFilter.value.toLowerCase())) : categoryStore.categories);
 const filteredMerchants = computed(() => merchantFilter.value ? merchantStore.merchants.filter(x => x.name.toLowerCase().startsWith(merchantFilter.value.toLowerCase())) : merchantStore.merchants);
 
@@ -405,14 +412,10 @@ watch (selectedCategory, () => {
 watch(selectedCategoryTab, async () => {
   if (!selectedCategory.value?.pk) return;
   if (selectedCategoryTab.value === "transactions" && selectedCategoryTransactions.value === undefined) {
-    selectedCategoryTransactions.value = await new TransactionSearchService()
-    .withUrlParameters({
-      "categoryId": selectedCategory.value?.pk
-    }).getMultiple();
+    setSelectedCategoryTransactions();
   } else if (selectedCategoryTab.value === "rules" && selectedCategoryRules.value === undefined) {
     selectedCategoryRules.value = await new CategoryRuleService(selectedCategory.value.pk).getMultiple();
   }
-
   
 })
 

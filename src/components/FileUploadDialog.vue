@@ -37,11 +37,16 @@
         
         <v-alert v-if="parsedTransactions.length > 0" color="info" title="Take a look" variant="outlined">
           <template v-slot:append>
-            <v-btn @click="uploadFile" variant="text" color="primary" :loading="loading" text="Yes, complete uploading file" prepend-icon="mdi-check"></v-btn>
+            <v-btn @click="uploadFile" variant="text" color="primary" :loading="loading" text="Yes, complete uploading file" prepend-icon="mdi-check" class="mt-2"></v-btn>
           </template>
           Does the following look right?
           </v-alert>
         <v-data-table :items="parsedTransactions"></v-data-table>
+        <v-empty-state
+            v-if="parsedTransactions.length === 0"                            
+            title="No data"
+            text="Upload a file"  
+        ></v-empty-state>
       </v-col>
     </v-row>
   </v-card-text>

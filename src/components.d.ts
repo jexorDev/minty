@@ -18,6 +18,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TransactionAddForm: typeof import('./components/TransactionAddForm.vue')['default']
+    TransactionQuickFindDialog: typeof import('./components/TransactionQuickFindDialog.vue')['default']
     TransactionsList: typeof import('./components/TransactionsList.vue')['default']
   }
 }

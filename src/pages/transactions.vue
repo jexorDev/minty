@@ -45,8 +45,23 @@
     </v-list>
   </v-navigation-drawer>
         
-  <v-toolbar color="secondary-darken-1" density="compact">
-    <v-text-field variant="outlined" density="compact" class="ml-2 mt-5" max-width="500" label="Quick Search" @update:model-value="searchUpdate" clearable></v-text-field>
+  <v-toolbar color="secondary-darken-1" density="compact">    
+     <v-menu>
+      <template v-slot:activator="{ props }">
+        <v-btn
+          color="primary"
+          append-icon="mdi-plus"
+          variant="outlined"
+          v-bind="props"
+        >
+          Add
+        </v-btn>
+      </template>
+      <v-list>
+        <v-list-item title="Single transaction" @click="setTransactionToEdit()"></v-list-item>
+        <v-list-item title="File" @click="showUploadDialog = true"></v-list-item>
+      </v-list>
+    </v-menu>
     <v-spacer></v-spacer>
     <v-btn @click="showFilterDrawer = !showFilterDrawer" prepend-icon="mdi-filter-variant" color="primary" :variant="showFilterDrawer ? `flat` : `outlined`">Filter</v-btn>
   </v-toolbar>
@@ -66,15 +81,7 @@
     </v-col>
   </v-row>
   
-  <v-fab :app="true"  icon="mdi-plus" color="primary">
-    <v-icon>$plus</v-icon>
-    <v-speed-dial  activator="parent">
-      <v-btn key="1" color="primary" @click="showUploadDialog = true" text="File"></v-btn>
-      <v-btn key="2" color="primary" @click="setTransactionToEdit()" text="Single"></v-btn>          
-    </v-speed-dial>
-  </v-fab>
-
-  <TransactionAddForm :key="addFormKey" :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="getData"></TransactionAddForm>
+  <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="getData"></TransactionAddForm>
   <FileUploadDialog v-model="showUploadDialog" @refresh="getData"></FileUploadDialog>
     
 </template>
@@ -90,30 +97,24 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
 import { getCurrentMonth, getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
 import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
 import MonthEnum from '@/data/enumerations/MonthEnum';
+import FileUploadDialog from '@/components/FileUploadDialog.vue';
 
   const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
   const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
   const showAddTransactionDialog = ref(false);
-  const selectedYear = ref(2025);
+  const selectedYear = ref(getCurrentYear());
   const years = ref<number[]>([]);
-  const isLoading = ref(false);
-  const noResults = ref(false);
-  
   const showUploadDialog = ref(false);
   const selectedMonth = ref(getCurrentMonth());
   const categoryStore = useCategoryStore();
-
-  const addFormKey = ref(1);
   const reportingType = ref<number | null>(null);
   const filterCategoryId = ref<number | null>(null);
   const showFilterDrawer = ref(true);
   const monthEnum = new MonthEnum();
 
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedYear);
-  
-  let timerId: number | null = null;
   
   onMounted(async () => {
     for (var year = 2014; year <= getCurrentYear(); year++) {
@@ -140,37 +141,7 @@ import MonthEnum from '@/data/enumerations/MonthEnum';
           toDate: toDate
         }).getMultiple()
     ]);
-  }
-
-  function searchUpdate(searchString: string): void {
-    if (timerId) {
-      clearTimeout(timerId);
-    }
-
-    if (!searchString) {
-      transactions.value = [];
-      getData();
-      noResults.value = false;
-      return;
-    }
-
-    timerId = setTimeout(async () => {
-
-      try {
-        isLoading.value = true;
-        transactions.value = await new TransactionSearchService()
-        .withUrlParameters({
-          searchString: searchString
-        }).getMultiple();
-        
-      } finally {
-        noResults.value = transactions.value.length === 0;
-        isLoading.value = false;
-      }
-
-      }, 1000); 
-      
-  }
+  }  
 
   const filteredTransactions = computed(() => transactions.value
     .filter(x => reportingType.value === null || x.categoryReportingType === reportingType.value)

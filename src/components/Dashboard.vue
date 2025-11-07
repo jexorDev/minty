@@ -85,14 +85,20 @@ import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposabl
 import { useSpendingAreaChart } from '@/composables/SpendingAreaChartComposable';
 import { useSpendingTreemapChart } from '@/composables/SpendingTreemapChartComposable';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
+import { aggregateCategoryMonthTotals } from '@/utilities/CategoryMonthAggregator';
+import CategoryTypeEnum from '@/data/enumerations/CategoryType';
+import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
+import { getCurrentYear } from '@/utilities/DateArithmeticUtility';
 
-const selectedCurrentYear = ref(2025);
+const selectedCurrentYear = ref(getCurrentYear());
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
+const categoryTypeEnum = new CategoryTypeEnum();
+const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
 
-const totalExpensesCurrentYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 0 &&  x.reportingType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0));
-const totalExpensesPreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
-const totalIncomeCurrentYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.reportingType === 0 && x.year === selectedCurrentYear.value).reduce((acc, curr) => { return acc + curr.total}, 0));
-const totalIncomePreviousYear = computed(() => categoryMonthTotals.value.filter(x => x.categoryType === 1 && x.reportingType === 0 && x.year === selectedCurrentYear.value - 1).reduce((acc, curr) => { return acc + curr.total}, 0));
+const totalExpensesCurrentYear = computed(() => aggregateCategoryMonthTotals(categoryMonthTotals.value, { year: selectedCurrentYear.value, categoryType: categoryTypeEnum.Expense.value, categoryReportingTypes: [categoryReportingTypeEnum.AlwaysInclude.value] }));
+const totalExpensesPreviousYear = computed(() => aggregateCategoryMonthTotals(categoryMonthTotals.value, { year: selectedCurrentYear.value - 1, categoryType: categoryTypeEnum.Expense.value, categoryReportingTypes: [categoryReportingTypeEnum.AlwaysInclude.value] }));
+const totalIncomeCurrentYear = computed(() => aggregateCategoryMonthTotals(categoryMonthTotals.value, { year: selectedCurrentYear.value, categoryType: categoryTypeEnum.Income.value, categoryReportingTypes: [categoryReportingTypeEnum.AlwaysInclude.value] }));
+const totalIncomePreviousYear = computed(() => aggregateCategoryMonthTotals(categoryMonthTotals.value, { year: selectedCurrentYear.value - 1, categoryType: categoryTypeEnum.Income.value, categoryReportingTypes: [categoryReportingTypeEnum.AlwaysInclude.value] }));
 
 const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedCurrentYear);
 const {options: spendingAreaChartOptions, series: spendingAreaChartSeries} = useSpendingAreaChart(categoryMonthTotals, selectedCurrentYear.value, selectedCurrentYear.value - 1);

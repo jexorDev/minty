@@ -1,6 +1,9 @@
 import type CategoryMonthTotal from "@/data/interfaces/Statistics/CategoryMonthTotal";
 import { useDonutChart } from "./DonutChartComposable";
 import type { Ref } from "vue";
+import { aggregateCategoryMonthTotals } from "@/utilities/CategoryMonthAggregator";
+import CategoryTypeEnum from "@/data/enumerations/CategoryType";
+import CategoryReportingTypeEnum from "@/data/enumerations/CategoryReportingType";
 
 export function useSpendingDonutChart(data: Ref<CategoryMonthTotal[]>, year: Ref<number>) {
     
@@ -24,5 +27,10 @@ function getChartData(data: CategoryMonthTotal[], year: number) {
 }
 
 function getCategoryTotal(data: CategoryMonthTotal[], categoryName: string, year: number) {
-  return data.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.categoryName === categoryName && x.year === year).reduce((acc, curr) => {return acc + curr.total}, 0)
+  return aggregateCategoryMonthTotals(data, { 
+    year: year, 
+    categoryName: categoryName, 
+    categoryType: new CategoryTypeEnum().Expense.value, 
+    categoryReportingTypes: [new CategoryReportingTypeEnum().AlwaysInclude.value]
+  });
 }

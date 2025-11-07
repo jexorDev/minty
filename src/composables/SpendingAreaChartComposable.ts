@@ -1,10 +1,15 @@
 import type CategoryMonthTotal from "@/data/interfaces/Statistics/CategoryMonthTotal";
 import { useAreaChart } from "./AreaChartComposable";
 import type { Ref } from "vue";
+import { aggregateCategoryMonthTotals } from "@/utilities/CategoryMonthAggregator";
+import CategoryTypeEnum from "@/data/enumerations/CategoryType";
+import CategoryReportingTypeEnum from "@/data/enumerations/CategoryReportingType";
+import MonthEnum from "@/data/enumerations/MonthEnum";
 
 export function useSpendingAreaChart(data: Ref<CategoryMonthTotal[]>, firstYear: number, secondYear: number) {
     
-    const xAxisCategories = ref(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+    const monthEnum = new MonthEnum();
+    const xAxisCategories = ref(monthEnum.getItems().map(x => x.description.substring(0, 3)));
     
     const {options} = useAreaChart(xAxisCategories);
 
@@ -22,9 +27,18 @@ export function useSpendingAreaChart(data: Ref<CategoryMonthTotal[]>, firstYear:
 
 function getChartData(data: CategoryMonthTotal[], year: number) {
     const chartData : number[] = [];
+    var previousMonthsTotal = 0;
 
-    for (var i = 1; i <= 12; i++) {    
-        chartData.push(data.filter(x => x.categoryType === 0 && x.reportingType === 0 && x.month <= i && x.year === year).reduce((acc, curr) => { return acc + curr.total}, 0));
+    for (var i = 0; i < 12; i++) {    
+        const currentMonthTotal = aggregateCategoryMonthTotals(data, { 
+            year: year, 
+            month: i,
+            categoryType: new CategoryTypeEnum().Expense.value, 
+            categoryReportingTypes: [new CategoryReportingTypeEnum().AlwaysInclude.value]
+        });
+        
+        chartData.push(currentMonthTotal + previousMonthsTotal);
+        previousMonthsTotal += currentMonthTotal;
     }
 
     return chartData;

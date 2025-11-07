@@ -19,18 +19,7 @@
           color="primary"  
           column
           mandatory>
-          <v-chip >Jan</v-chip>
-          <v-chip >Feb</v-chip>
-          <v-chip >Mar</v-chip>
-          <v-chip >Apr</v-chip>
-          <v-chip >May</v-chip>
-          <v-chip >Jun</v-chip>
-          <v-chip >Jul</v-chip>
-          <v-chip >Aug</v-chip>
-          <v-chip >Sep</v-chip>
-          <v-chip >Oct</v-chip>
-          <v-chip >Nov</v-chip>
-          <v-chip >Dec</v-chip>                
+          <v-chip v-for="month in monthEnum.getItems()">{{ month.description.substring(0, 3) }}</v-chip>          
       </v-chip-group>
       </v-list-item>
       <v-list-item>
@@ -38,6 +27,7 @@
         <v-autocomplete clearable v-model="filterCategoryId" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
       </v-list-item>
       <v-list-item>
+        
         <v-list-item-subtitle>Reporting Type</v-list-item-subtitle>          
         <v-radio-group
             v-model="reportingType"
@@ -48,9 +38,10 @@
           >
           <v-radio v-for="enumItem in categoryReportingTypeEnum.getItems()" :label="enumItem.description" :value="enumItem.value"></v-radio>          
         </v-radio-group>
-        <v-btn @click="reportingType = null" density="compact" color="secondary" variant="text">Reset reporting type</v-btn>
-      </v-list-item>
-     
+        <v-list-item-action>
+          <v-btn @click="reportingType = null" density="compact" color="secondary" variant="text">Reset</v-btn>
+        </v-list-item-action>
+      </v-list-item>     
     </v-list>
   </v-navigation-drawer>
         
@@ -63,16 +54,13 @@
     <v-col :cols="$vuetify.display.mobile ? 12 : 8">
       <div :class="$vuetify.display.mobile ? '' : 'scroll'">
         <TransactionsList @selected-transaction-changed="setTransactionToEdit" :transactions="filteredTransactions"></TransactionsList>
-
       </div>
-
     </v-col>
     <v-col v-if="!$vuetify.display.mobile" :cols="4">
       <v-card>
         <apexchart  :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
       </v-card>
-      <v-card>
-        
+      <v-card>        
         <v-data-table :items="tableData" :headers="headers" density="compact"></v-data-table>
       </v-card>
     </v-col>
@@ -92,63 +80,36 @@
 </template>
   
 <script setup lang="ts">
-import { provide } from 'vue';
-import type Transaction from '@/data/interfaces/Transactions/Transaction';
-import type Category from '@/data/interfaces/Category';
-import TransactionsService from '@/data/services/TransactionsService';
-import CategoryService from '@/data/services/CategoryService'; 
-import TransactionModel from '@/data/classes/TransactionModel';
-import TransactionSplitModel from '@/data/classes/TransactionSplitModel';
-import ModelList from '@/data/classes/ModelList';
-import type TransactionSplit from '@/data/interfaces/Transactions/TransactionSplit';
-import TransactionSplitsService from '@/data/services/TransactionSplitsService';
 import {useCategoryStore} from '@/stores/CategoryStore';
 import TransactionSearchService from '@/data/services/TransactionSearchService';
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
-import FileUploadService from '@/data/services/FileUploadService';
 import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthTotal';
 import StatisticsService from '@/data/services/StatisticsService';
 import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposable';
-import { useDisplay } from 'vuetify';
 import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
-import { getCurrentDate, getCurrentMonth, getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
+import { getCurrentMonth, getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
 import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
+import MonthEnum from '@/data/enumerations/MonthEnum';
 
-  interface AutoCompleteObject {
-    type: string;
-    text: string;
-    value: number | string;
-  }
-  
   const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
   const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
-  const searchItems = ref<Transaction[]>([])
-  //const categories = ref<Category[]>([]);
-  const selectedFilter = ref<AutoCompleteObject | null>(null);
-  const fromDate = ref(getCurrentDate());
-  const searchString = ref("");
   const showAddTransactionDialog = ref(false);
-  const loading = ref(false);  
-  //provide('show', show);
-  //provide('loading', loading);
   const selectedYear = ref(2025);
   const years = ref<number[]>([]);
-  const transactionModel = ref<TransactionSearch>({} as TransactionSearch);
-  const transactionSplitModels = ref<ModelList<TransactionSplitModel, TransactionSplit>>();  
   const isLoading = ref(false);
   const noResults = ref(false);
   
   const showUploadDialog = ref(false);
   const selectedMonth = ref(getCurrentMonth());
   const categoryStore = useCategoryStore();
-  const { mobile } = useDisplay()
 
   const addFormKey = ref(1);
   const reportingType = ref<number | null>(null);
   const filterCategoryId = ref<number | null>(null);
   const showFilterDrawer = ref(true);
+  const monthEnum = new MonthEnum();
 
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedYear);
   
@@ -194,10 +155,6 @@ import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
     }
 
     timerId = setTimeout(async () => {
-      // searchItems.value = await new TransactionsService()
-      // .withUrlParameters({
-      //   searchString: searchString
-      // }).getMultiple();
 
       try {
         isLoading.value = true;
@@ -242,27 +199,11 @@ import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
   });
 
   const headers = [
-  { title: 'Category', value: 'x' },
-  { title: 'Total', key: 'y' }  
-]
-  
-  const transactionDescriptions = computed<string[]>(() => [...new Set(transactions.value.map(x => x.description))]);
-  // const autoCompleteObjects = computed<AutoCompleteObject[]>(() => [...categoryStore.categories.map(x => {
-  //   return {
-  //     type: "Category",
-  //     text: x.name,
-  //     value: x.pk
-  //   }
-  // }), ...transactionDescriptions.value.map(x => {
-  //   return {
-  //     type: "",
-  //     text: x,
-  //     value: x
-  //   }
-  // } )]);
-
-  </script>
-  <style scoped>
+    { title: 'Category', value: 'x' },
+    { title: 'Total', key: 'y' }  
+  ];
+</script>
+<style scoped>
 .scroll {
   height: 93vh;
   overflow: auto;

@@ -59,22 +59,38 @@
     </v-row>
     <v-row>
       <v-col>
-        <div class="text-overline">Spending over time comparison</div>
-        <apexchart  height="350" width="600" :options="spendingAreaChartOptions" :series="spendingAreaChartSeries"></apexchart>
+        <v-card
+          title="Spending Over Time Comparison"
+          subtitle="This year vs last year">
+          <v-card-text>
+            <apexchart  height="350" width="600" :options="spendingAreaChartOptions" :series="spendingAreaChartSeries"></apexchart>
+          </v-card-text>
+        </v-card>
         
       </v-col>
       <v-col>
-        <div class="text-overline">Spending by category</div>
+        <v-card 
+          title="Spending by Category"
+          subtitle="For this year">
+          <template v-slot:append>
+            <v-radio-group 
+              v-model="selectedSpendingByCategoryChartType"
+              inline 
+              density="compact">
+              <v-radio label="Donut" :value="0"></v-radio>
+              <v-radio label="Treemap" :value="1"></v-radio>
+            </v-radio-group>
+            
+          </template>          
+          <v-card-text>
+            <apexchart v-if="selectedSpendingByCategoryChartType === 1" height="350" width="600" :options="spendingTreemapChartOptions" :series="spendingTreemapChartSeries"></apexchart>
+            <apexchart v-else height="350" width="600" :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
 
-        <apexchart  height="350" width="600" :options="spendingTreemapChartOptions" :series="spendingTreemapChartSeries"></apexchart>
-        
-      </v-col>
-      <v-col>
-        <div class="text-overline">Spending by category</div>
+          </v-card-text>
 
-        <apexchart  height="350" width="600" :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
+        </v-card>
         
-      </v-col>
+      </v-col>      
     </v-row>
   </v-container> 
 </template>
@@ -92,6 +108,7 @@ import { getCurrentYear } from '@/utilities/DateArithmeticUtility';
 
 const selectedCurrentYear = ref(getCurrentYear());
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
+const selectedSpendingByCategoryChartType = ref(0);
 const categoryTypeEnum = new CategoryTypeEnum();
 const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
 
@@ -100,7 +117,7 @@ const totalExpensesPreviousYear = computed(() => aggregateCategoryMonthTotals(ca
 const totalIncomeCurrentYear = computed(() => aggregateCategoryMonthTotals(categoryMonthTotals.value, { year: selectedCurrentYear.value, categoryType: categoryTypeEnum.Income.value, categoryReportingTypes: [categoryReportingTypeEnum.AlwaysInclude.value] }));
 const totalIncomePreviousYear = computed(() => aggregateCategoryMonthTotals(categoryMonthTotals.value, { year: selectedCurrentYear.value - 1, categoryType: categoryTypeEnum.Income.value, categoryReportingTypes: [categoryReportingTypeEnum.AlwaysInclude.value] }));
 
-const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedCurrentYear);
+const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(categoryMonthTotals, selectedCurrentYear, true);
 const {options: spendingAreaChartOptions, series: spendingAreaChartSeries} = useSpendingAreaChart(categoryMonthTotals, selectedCurrentYear.value, selectedCurrentYear.value - 1);
 const {options: spendingTreemapChartOptions, series: spendingTreemapChartSeries} = useSpendingTreemapChart(categoryMonthTotals, selectedCurrentYear.value);
 

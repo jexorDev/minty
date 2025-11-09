@@ -5,9 +5,9 @@ import { aggregateCategoryMonthTotals } from "@/utilities/CategoryMonthAggregato
 import CategoryTypeEnum from "@/data/enumerations/CategoryType";
 import CategoryReportingTypeEnum from "@/data/enumerations/CategoryReportingType";
 
-export function useSpendingDonutChart(data: Ref<CategoryMonthTotal[]>, year: Ref<number>) {
+export function useSpendingDonutChart(data: Ref<CategoryMonthTotal[]>, year: Ref<number>, showLegend: boolean = false) {
     
-    const {options} = useDonutChart();
+    const {options} = useDonutChart(showLegend);
 
     const series = computed(() => [{
         data: getChartData(toValue(data), toValue(year))
@@ -17,20 +17,22 @@ export function useSpendingDonutChart(data: Ref<CategoryMonthTotal[]>, year: Ref
 }
 
 function getChartData(data: CategoryMonthTotal[], year: number) {
-  const chartData: {x: string, y:number}[] = [];
+  
+  const seriesSets: any[] = [];
+  
+    const categories = [...new Set(data.map(x => x.categoryId))];
 
-  for (var category of [...new Set(data.map(x => x.categoryName))]) {
-    chartData.push({x: category, y: getCategoryTotal(data, category, year)});
-  }
+    for (var categoryIndex = 0; categoryIndex < categories.length; categoryIndex++) {
+      
+        seriesSets.push({x: data.find(x => x.categoryId === categories[categoryIndex])?.categoryName, y: aggregateCategoryMonthTotals(toValue(data), {
+          year: year,
+          categoryId: categories[categoryIndex],
+          categoryType: new CategoryTypeEnum().Expense.value,
+          categoryReportingTypes: [new CategoryReportingTypeEnum().AlwaysInclude.value]
+        })});            
 
-  return chartData.sort((a, b) => {return b.y - a.y});
+    }
+    
+    return seriesSets.sort((a, b) => {return b.y - a.y});
 }
 
-function getCategoryTotal(data: CategoryMonthTotal[], categoryName: string, year: number) {
-  return aggregateCategoryMonthTotals(data, { 
-    year: year, 
-    categoryName: categoryName, 
-    categoryType: new CategoryTypeEnum().Expense.value, 
-    categoryReportingTypes: [new CategoryReportingTypeEnum().AlwaysInclude.value]
-  });
-}

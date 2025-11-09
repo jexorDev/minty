@@ -13,6 +13,10 @@ export function getCurrentMonth(): number {
     return dayjs().month();
 }
 
-export function getDaysInMonth(date: string | Dayjs): number {
+export function getDaysInMonth(date: string | Dayjs | Date): number {
     return dayjs(date).daysInMonth();
+}
+
+export function getMonth(date: string | Dayjs | Date): number {
+    return dayjs(date).month();
 }

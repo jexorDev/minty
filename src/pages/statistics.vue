@@ -51,38 +51,52 @@
         <v-btn @click="showFilterDrawer = !showFilterDrawer" prepend-icon="mdi-filter-variant" color="primary" :variant="showFilterDrawer ? `flat` : `outlined`">Filter</v-btn>
     </v-toolbar>
         
-    <v-row>
+    <v-row no-gutters>
         <v-col cols="12" md="8">
             <v-card >
                 <v-card-title>
-                    <v-switch v-model="showStackedBarChartList" label="List View"></v-switch>
+                    <v-switch 
+                        v-model="showStackedBarChartList" 
+                        label="List View"
+                        density="compact">
+                    </v-switch>
                 </v-card-title>
                 <v-card-text>
                     <apexchart v-if="!showStackedBarChartList" :options="spendingStackedBarChartOptions" :series="spendingStackedBarChartSeries"></apexchart>
-                    <v-data-table v-if="showStackedBarChartList" :items="spendingTotalByYear" density="compact" hide-default-footer></v-data-table>
+                    <v-data-table v-else :items="spendingTotalByYear" density="compact" hide-default-footer></v-data-table>
                 </v-card-text>
             </v-card>
         </v-col>
-        <v-col cols="12" md="4">            
+        <v-col cols="12" md="4">     
+             <v-card color="secondary-darken-1" class="my-2">
+                <v-card-text>
+                    <v-row>
+                        <v-col>
+                            <div class="text-overline">Total</div>
+                            {{ formatNumber(grandTotal) }}
+
+                        </v-col>
+                        <v-col>
+                            <div class="text-overline">Monthly Avg</div>
+                            {{ formatNumber(monthlyAverage) }}
+                        </v-col>
+                    </v-row>
+                </v-card-text>
+            </v-card>       
             <v-card>
                 <v-card-title>
-                     <v-chip-group 
-                        color="primary"  
-                        column
-                        size="small"
-                        >
-                        <v-chip>All years</v-chip>
-                        <v-chip v-for="year in donutChartYears" :value="year">{{ year }} only</v-chip>                      
-                    </v-chip-group>
+                    <v-switch 
+                        v-model="showDonutChartList" 
+                        label="List View"
+                        density="compact">
+                    </v-switch>
                 </v-card-title>
-                <v-card-text>
-                    Total: {{ grandTotal }}
-                    <apexchart  :options="sependingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
+                <v-card-text>                    
+                    <apexchart v-if="!showDonutChartList"  :options="sependingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
+                    <DataTable v-else :data="spendingByCategoryTableData" :headers="[]"></DataTable>                    
                 </v-card-text>
-            </v-card>
-            <v-card>
-                <v-data-table :items="spendingTotalByYear"></v-data-table>
-            </v-card>
+            </v-card>            
+           
         </v-col>
     </v-row>
 
@@ -104,16 +118,16 @@ const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const showFilterDrawer = ref(true);
 const reportingType = ref<number | null>(null);
 
-const selectedDonutChartYears = ref<number[]>([]);
 const showStackedBarChartList = ref(false);
+const showDonutChartList = ref(false);
 const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
 const selectedComparisonYear = ref<number | undefined>(undefined);
 const categoryStore = useCategoryStore();
 const {options: spendingStackedBarChartOptions, series: spendingStackedBarChartSeries} = useStackedSpendingBarChart(categoryMonthTotals, filterCategoryId);
 const {options: sependingDonutChartOptions, series: spendingDonutChartSeries } = useSpendingDonutChart(categoryMonthTotals, selectedYear);
 
-const grandTotal = 0;//computed<number>(() => spendingStackedBarChartSeries.value.map(x => x.data).reduce((acc, curr) => acc + curr.reduce((a, c) => a + c, 0), 0));
-
+const grandTotal = computed<number>(() => spendingStackedBarChartSeries.value.map(x => x.data).reduce((acc, curr) => acc + curr.reduce((a, c) => a + c, 0), 0));
+const monthlyAverage = computed<number>(() => grandTotal.value / (12 * (selectedComparisonYear.value ?? 1)))
 
 onMounted(async () => {
     for (var year = 2014; year <= getCurrentYear(); year++) {
@@ -162,8 +176,8 @@ const spendingTotalByYear = computed(() => {
         total: number
     }[] = [];
 
-    for (var i = 0; i < spendingStackedBarChartSeries.value.length; i++) {
-        const currDataSet = spendingStackedBarChartSeries.value[i];
+    for (var yearIndex = 0; yearIndex < spendingStackedBarChartSeries.value.length; yearIndex++) {
+        const currDataSet = spendingStackedBarChartSeries.value[yearIndex];
         array.push({
             year: currDataSet.name, 
             janTotal: currDataSet.data[0], 
@@ -180,12 +194,56 @@ const spendingTotalByYear = computed(() => {
             decTotal: currDataSet.data[11], 
             total: currDataSet.data.reduce((acc, curr) => acc + curr, 0)});
     }
-    return array;
-}
 
+    if (spendingStackedBarChartSeries.value.length > 1) {
+        const grandTotalLine = {
+            year: "MonthTotal", 
+            janTotal: array.map(x => x.janTotal).reduce((acc, curr) => acc + curr, 0), 
+            febTotal: array.map(x => x.febTotal).reduce((acc, curr) => acc + curr, 0), 
+            marTotal: array.map(x => x.marTotal).reduce((acc, curr) => acc + curr, 0), 
+            aprTotal: array.map(x => x.aprTotal).reduce((acc, curr) => acc + curr, 0), 
+            mayTotal: array.map(x => x.mayTotal).reduce((acc, curr) => acc + curr, 0), 
+            junTotal: array.map(x => x.junTotal).reduce((acc, curr) => acc + curr, 0), 
+            julTotal: array.map(x => x.julTotal).reduce((acc, curr) => acc + curr, 0), 
+            augTotal: array.map(x => x.augTotal).reduce((acc, curr) => acc + curr, 0), 
+            sepTotal: array.map(x => x.sepTotal).reduce((acc, curr) => acc + curr, 0), 
+            octTotal: array.map(x => x.octTotal).reduce((acc, curr) => acc + curr, 0), 
+            novTotal: array.map(x => x.novTotal).reduce((acc, curr) => acc + curr, 0), 
+            decTotal: array.map(x => x.decTotal).reduce((acc, curr) => acc + curr, 0), 
+            total: array.map(x => x.total).reduce((acc, curr) => acc + curr, 0)
+        }
     
+        const averageLine = {
+            year: "Average",
+            janTotal: grandTotalLine.janTotal / spendingStackedBarChartSeries.value.length,
+            febTotal: grandTotalLine.febTotal / spendingStackedBarChartSeries.value.length,
+            marTotal: grandTotalLine.marTotal / spendingStackedBarChartSeries.value.length,
+            aprTotal: grandTotalLine.aprTotal / spendingStackedBarChartSeries.value.length,
+            mayTotal: grandTotalLine.mayTotal / spendingStackedBarChartSeries.value.length,
+            junTotal: grandTotalLine.junTotal / spendingStackedBarChartSeries.value.length,
+            julTotal: grandTotalLine.julTotal / spendingStackedBarChartSeries.value.length,
+            augTotal: grandTotalLine.augTotal / spendingStackedBarChartSeries.value.length,
+            sepTotal: grandTotalLine.sepTotal / spendingStackedBarChartSeries.value.length,
+            octTotal: grandTotalLine.octTotal / spendingStackedBarChartSeries.value.length,
+            novTotal: grandTotalLine.novTotal / spendingStackedBarChartSeries.value.length,
+            decTotal: grandTotalLine.decTotal / spendingStackedBarChartSeries.value.length,
+            total: grandTotalLine.total / spendingStackedBarChartSeries.value.length
+        }
+    
+        array.push(grandTotalLine);
+        array.push(averageLine);
+    }
 
-);
+    return array;
+});
+
+  const spendingByCategoryTableData = computed(() => {
+    if (spendingDonutChartSeries.value.length > 0) {
+      return spendingDonutChartSeries.value[0].data;
+    } else {
+      return [];
+    }
+  });
 
 watch(selectedYear, async () => await getData());
 watch(selectedComparisonYear, async () => await getData());

@@ -1,5 +1,6 @@
 <template>
   <v-navigation-drawer
+    v-if="!quickFindMode"
     v-model="showFilterDrawer"    
     location="right">
     <v-list>
@@ -46,46 +47,87 @@
   </v-navigation-drawer>
         
   <v-toolbar color="secondary-darken-1" density="compact">    
-    <v-btn
-      v-if="!$vuetify.display.mobile"
-      color="primary"
-      append-icon="mdi-file-table-outline"
-      variant="tonal"
-      class="mr-1"
-    >
-      Export
-    </v-btn>
-     <v-menu>
-      <template v-slot:activator="{ props }">
-        <v-btn
-          color="primary"
-          append-icon="mdi-plus"
-          variant="outlined"
-          v-bind="props"
-        >
-          Add
-        </v-btn>
-      </template>
-      <v-list>
-        <v-list-item title="Single transaction" @click="setTransactionToEdit()">
-          <template v-slot:append>
-            <v-icon icon="mdi-cash-register"></v-icon>
-          </template>
-        </v-list-item>
-        <v-list-item title="File" @click="showUploadDialog = true">
-          <template v-slot:append>
-            <v-icon icon="mdi-upload"></v-icon>
-          </template>
-        </v-list-item>
-      </v-list>
-    </v-menu>
-    <v-spacer></v-spacer>
-    <v-btn @click="showFilterDrawer = !showFilterDrawer" prepend-icon="mdi-filter-variant" color="primary" :variant="showFilterDrawer ? `flat` : `outlined`">Filter</v-btn>
+    <template v-slot:prepend>
+      <v-btn
+        v-if="!$vuetify.display.mobile"
+        color="primary"
+        append-icon="mdi-file-table-outline"
+        variant="text"
+        class="mr-1"
+      >
+        Export
+      </v-btn>
+      <v-divider vertical thickness="3"></v-divider>
+       <v-menu v-if="!quickFindMode">
+        <template v-slot:activator="{ props }">
+          <v-btn
+            color="primary"
+            append-icon="mdi-plus"
+            variant="text"
+            v-bind="props"
+          >
+            Add
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item title="Single transaction" @click="setTransactionToEdit()">
+            <template v-slot:append>
+              <v-icon icon="mdi-cash-register"></v-icon>
+            </template>
+          </v-list-item>
+          <v-list-item title="File" @click="showUploadDialog = true">
+            <template v-slot:append>
+              <v-icon icon="mdi-upload"></v-icon>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </template>
+
+    <v-text-field 
+      v-if="quickFindMode" 
+      v-model="searchString" 
+      variant="outlined" 
+      density="compact" 
+      max-width="500" 
+      placeholder="Quick Search" 
+      @update:model-value="searchUpdate" 
+      clearable 
+      :loading="isLoading" 
+      class="mt-5">
+        <template v-slot:append>
+            <v-chip label >{{ resultCount }} results</v-chip>
+        </template>
+    </v-text-field>
+      
+    <template v-slot:append>
+      <v-btn 
+        @click="quickFindMode = !quickFindMode" 
+        :prepend-icon="quickFindMode ? 'mdi-magnify-remove-outline' : 'mdi-magnify'"                 
+        :text="quickFindMode ? '' : 'Quick Find'"
+        color="primary" 
+        class="ml-1" 
+        :variant="quickFindMode ? 'flat' : 'outlined'"  
+        ></v-btn>
+      <v-btn 
+        v-if="!quickFindMode" 
+        text="Filter"
+        @click="showFilterDrawer = !showFilterDrawer" 
+        prepend-icon="mdi-filter-variant" 
+        color="primary" 
+        class="ml-1" 
+        :variant="showFilterDrawer ? `flat` : `outlined`"></v-btn>
+    </template>
   </v-toolbar>
   <v-row no-gutters>
     <v-col cols="12" md="8">
       <div :class="$vuetify.display.mobile ? '' : 'scroll'">
         <TransactionsList @selected-transaction-changed="setTransactionToEdit" :transactions="filteredTransactions"></TransactionsList>
+        <v-empty-state
+            v-if="(!quickFindMode || searchString) && !isLoading && resultCount === 0"                            
+            title="No results"
+            text="Try a different search criteria"  
+        ></v-empty-state>
       </div>
     </v-col>
     <v-col cols="12" md="4">
@@ -128,12 +170,16 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
   const filterCategoryId = ref<number | null>(null);
   const showFilterDrawer = ref(true);
   const monthEnum = new MonthEnum();
+  const quickFindMode = ref(false);
+  const searchString = ref("");
+  const isLoading = ref(false);
   const headers = [
     { title: 'Category', key: 'x' },
     { title: 'Total', key: 'y', value: (item: any) => formatNumber(item.y, NumberFormats.Price) }  
   ];
 
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingFromTransactionsDonutChart(transactions, filterCategoryId, reportingType);
+  let timerId: number | null = null;
   
   onMounted(async () => {
     for (var year = 2014; year <= getCurrentYear(); year++) {
@@ -148,12 +194,41 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
     const fromDate = createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO);
     const toDate = createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate), DateFormats.ISO);
 
-    transactions.value = await new TransactionSearchService()
-      .withUrlParameters({
-        fromDate: fromDate,
-        toDate: toDate
-      }).getMultiple();   
+    try {
+      isLoading.value = true;
+      transactions.value = await new TransactionSearchService()
+        .withUrlParameters({
+          fromDate: fromDate,
+          toDate: toDate
+        }).getMultiple();   
+    } finally {
+      isLoading.value = false;
+    }
   }  
+
+  function searchUpdate(searchString: string): void {
+    if (timerId) {
+        isLoading.value = true;
+      clearTimeout(timerId);
+    }
+
+    if (!searchString) {
+        transactions.value = [];
+        isLoading.value = false;
+        return;
+    }
+
+    timerId = setTimeout(async () => {
+      try {
+        transactions.value = await new TransactionSearchService()
+            .withUrlParameters({
+            searchString: searchString
+            }).getMultiple();        
+      } finally {
+        isLoading.value = false;
+      }
+    }, 1000);       
+  }
 
   const filteredTransactions = computed(() => transactions.value
     .filter(x => reportingType.value === null || x.categoryReportingType === reportingType.value)
@@ -167,6 +242,8 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
     }
   });
 
+  const resultCount = computed(() => transactions.value.length);
+
   function setTransactionToEdit(transaction?: TransactionSearch) {
     selectedTransaction.value = transaction;
     showAddTransactionDialog.value = true;
@@ -174,6 +251,14 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
 
   watch(selectedYear, async () => await getData());
   watch(selectedMonth, async () => await getData());
+
+  watch(quickFindMode, () => {
+    transactions.value = [];
+    if (!quickFindMode.value) {
+      searchString.value = "";
+      getData();
+    }
+  })
   
 </script>
 <style scoped>

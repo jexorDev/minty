@@ -11,6 +11,7 @@ declare module 'vue' {
     AppFooter: typeof import('./components/AppFooter.vue')['default']
     CategoryAddEditForm: typeof import('./components/CategoryAddEditForm.vue')['default']
     Dashboard: typeof import('./components/Dashboard.vue')['default']
+    DataTable: typeof import('./components/DataTable.vue')['default']
     DialogBase: typeof import('./components/DialogBase.vue')['default']
     FileUploadDialog: typeof import('./components/FileUploadDialog.vue')['default']
     ImportedFiles: typeof import('./components/ImportedFiles.vue')['default']

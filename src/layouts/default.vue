@@ -83,9 +83,7 @@
 
       <router-view/>
 
-    </v-main>
-    <TransactionQuickFindDialog v-model:show="showQuickFindDialog"></TransactionQuickFindDialog>
-    <v-fab :app="true"  icon="mdi-text-search-variant" color="primary" @click="showQuickFindDialog = true"></v-fab>
+    </v-main>    
 
   <!-- <AppFooter /> -->
 </template>
@@ -114,7 +112,6 @@ const { mobile } = useDisplay()
 
 const drawer = ref(!mobile.value);
 const username = ref("");
-const showQuickFindDialog = ref(false);
 
 onMounted(async () => {
   const jwtToken = localStorage.getItem('authToken');

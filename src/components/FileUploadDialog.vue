@@ -19,7 +19,7 @@
     <v-card-text>                   
       <v-row>
         <v-col>
-          <v-select v-model="selectedImportType" :items="importFileTypeEnum.getItems()" item-title="description" item-value="value" density="compact"></v-select>
+          <v-select v-model="selectedImportType" :items="ImportFileTypeEnum.getItems()" item-title="description" item-value="value" density="compact"></v-select>
         </v-col>
         <v-col>
           <v-file-input
@@ -90,8 +90,7 @@ const snackbarStore = useSnackbarStore();
 
 const loading = ref(false);
 const selectedFileUpload = ref<File|null>(null);
-const importFileTypeEnum = new ImportFileTypeEnum();
-const selectedImportType = ref(importFileTypeEnum.BankOfAmerica.value);
+const selectedImportType = ref(ImportFileTypeEnum.BankOfAmerica.value);
 
 async function parseFile(): Promise<void> {
   if (selectedFileUpload.value === null) {

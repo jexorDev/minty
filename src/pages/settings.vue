@@ -32,7 +32,7 @@
                       {{ category.name }}
                     </v-list-item-title>
                     <v-list-item-subtitle>                      
-                      {{ categoryTypeEnum.getItemByValue(category.type)?.description }}
+                      {{ CategoryTypeEnum.getItemByValue(category.type)?.description }}
                     </v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
@@ -231,9 +231,7 @@ import MerchantService from '@/data/services/MerchantService';
 import AccountService from '@/data/services/AccountService';
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import TransactionSearchService from '@/data/services/TransactionSearchService';
-import TransactionsService from '@/data/services/TransactionsService';
 import GenericService from '@/data/services/GenericService';
-import type CategoryRule from '@/data/interfaces/CategoryRule';
 import CategoryRuleService from '@/data/services/CategoryRuleService';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
@@ -247,7 +245,6 @@ const confirmationStore = useConfirmationStore();
 
 const { mobile } = useDisplay()
 
-//const categories = ref<Category[]>([]);
 const selectedTransaction = ref<TransactionSearch>({} as TransactionSearch);
 const selectedCategory = ref<Category | null>(null);
 const selectedConvertCategory = ref<Category | null>(null);

@@ -1,7 +1,7 @@
 import BaseEnum, { type EnumItem } from "./BaseEnum";
 
 export default class CategoryReportingTypeEnum extends BaseEnum {
-    public AlwaysInclude: EnumItem = {value: 0, description: "Always Include"};
-    public ExcludeByDefault: EnumItem = {value: 1, description: "Exclude by Default"};
-    public AlwaysExclude: EnumItem = {value: 2, description: "Always Exclude"};
+    public static AlwaysInclude: EnumItem = {value: 0, description: "Always Include"};
+    public static ExcludeByDefault: EnumItem = {value: 1, description: "Exclude by Default"};
+    public static AlwaysExclude: EnumItem = {value: 2, description: "Always Exclude"};
 }

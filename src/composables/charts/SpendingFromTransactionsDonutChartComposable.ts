@@ -1,5 +1,5 @@
 import type {Ref} from 'vue';
-import { useDonutChart } from './DonutChartComposable';
+import { useDonutChart } from '../baseCharts/DonutChartComposable';
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
@@ -20,8 +20,8 @@ function getChartData(data: TransactionSearch[], categoryId: number | null, cate
   const seriesSets: any[] = [];
   
     const categories = [...new Set(data
-        .filter(x => x.categoryType === new CategoryTypeEnum().Expense.value) 
-        .filter(x => x.categoryReportingType === (categoryReportingType ?? new CategoryReportingTypeEnum().AlwaysInclude.value))
+        .filter(x => x.categoryType === CategoryTypeEnum.Expense.value) 
+        .filter(x => x.categoryReportingType === (categoryReportingType ?? CategoryReportingTypeEnum.AlwaysInclude.value))
         .filter(x => x.categoryId === (categoryId ?? x.categoryId))
         .map(y => y.categoryId))];
 

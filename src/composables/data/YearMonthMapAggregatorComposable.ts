@@ -27,7 +27,7 @@ export function useYearMonthMapAggregator(data: Ref<CategoryMonthTotal[]>, filte
                     month: monthIndex,
                     categoryId: filterValue.categoryId,
                     categoryType: filterValue.categoryType,
-                    categoryReportingTypes: [new CategoryReportingTypeEnum().AlwaysInclude.value]
+                    categoryReportingTypes: [CategoryReportingTypeEnum.AlwaysInclude.value]
                 }));        
             }
 

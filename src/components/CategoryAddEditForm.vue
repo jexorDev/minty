@@ -9,7 +9,7 @@
             color="primary"
             density="compact"
             mandatory>
-            <v-btn v-for="enumItem in categoryTypeEnum.getItems()">{{ enumItem.description }}</v-btn>                          
+            <v-btn v-for="enumItem in CategoryTypeEnum.getItems()">{{ enumItem.description }}</v-btn>                          
         </v-btn-toggle>    
         <div class="text-overline">Statistics</div>
         <v-btn-toggle 
@@ -18,7 +18,7 @@
             color="primary"
             density="compact"
             mandatory>
-            <v-btn v-for="enumItem in categoryReportingTypeEnum.getItems()">{{ enumItem.description }}</v-btn>
+            <v-btn v-for="enumItem in CategoryReportingTypeEnum.getItems()">{{ enumItem.description }}</v-btn>
         </v-btn-toggle>                   
     </div>
 </template> 
@@ -28,8 +28,5 @@ import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType
 import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 
 const selectedCategory = defineModel<Category>("category");
-
-const categoryTypeEnum = new CategoryTypeEnum();
-const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
 
 </script>

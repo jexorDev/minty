@@ -1,6 +1,6 @@
 import type {Ref} from "vue";
 import type YearCollectionModel from "@/data/classes/YearCollectionModel";
-import { useHeatmapChart } from "./HeatmapChartComposable";
+import { useHeatmapChart } from "../baseCharts/HeatmapChartComposable";
 
 interface Series {
     name: string;

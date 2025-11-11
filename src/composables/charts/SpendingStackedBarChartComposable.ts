@@ -1,5 +1,5 @@
 import type {Ref} from 'vue';
-import { useBarChart } from "./BarChartComposable";
+import { useBarChart } from "../baseCharts/BarChartComposable";
 import MonthEnum from "@/data/enumerations/MonthEnum";
 import type YearCollectionModel from "@/data/classes/YearCollectionModel";
 
@@ -11,7 +11,7 @@ interface Series {
 
 export function useStackedSpendingBarChart(data: Ref<Map<number, YearCollectionModel>>) {
     
-    const {options} = useBarChart(new MonthEnum().getItems().map(x => x.description));
+    const {options} = useBarChart(MonthEnum.getItems().map(x => x.description));
     
     const series = computed<Series[]>(() => {
         const series: Series[] = [];

@@ -41,7 +41,7 @@
           color="primary"  
           column
           mandatory>
-          <v-chip v-for="month in monthEnum.getItems()">{{ month.description.substring(0, 3) }}</v-chip>          
+          <v-chip v-for="month in MonthEnum.getItems()">{{ month.description.substring(0, 3) }}</v-chip>          
       </v-chip-group>
       </v-list-item>
       <v-divider thickness="3" class="mb-2"></v-divider>
@@ -57,7 +57,7 @@
             divided
             density="compact"
           >
-          <v-radio v-for="enumItem in categoryReportingTypeEnum.getItems()" :label="enumItem.description" :value="enumItem.value"></v-radio>          
+          <v-radio v-for="enumItem in CategoryReportingTypeEnum.getItems()" :label="enumItem.description" :value="enumItem.value"></v-radio>          
         </v-radio-group>
         <v-list-item-action>
           <v-btn @click="reportingType = null" density="compact" color="secondary" variant="text">Reset</v-btn>
@@ -174,11 +174,10 @@ import { getCurrentDate, getCurrentYear, getDaysInMonth, getMonth } from '@/util
 import { createDate, DateFormats, formatDate } from '@/utilities/DateFormattingUtility';
 import MonthEnum from '@/data/enumerations/MonthEnum';
 import FileUploadDialog from '@/components/FileUploadDialog.vue';
-import { useSpendingFromTransactionsDonutChart } from '@/composables/SpendingFromTransactionsDonutChartComposable';
+import { useSpendingFromTransactionsDonutChart } from '@/composables/charts/SpendingFromTransactionsDonutChartComposable';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 import { useUserSettingsStore } from '@/stores/UserSettingsStore';
 
-  const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
   const showAddTransactionDialog = ref(false);
@@ -190,7 +189,6 @@ import { useUserSettingsStore } from '@/stores/UserSettingsStore';
   const reportingType = ref<number | null>(null);
   const filterCategoryId = ref<number | null>(null);
   const showFilterDrawer = ref(true);
-  const monthEnum = new MonthEnum();
   const quickFindMode = ref(false);
   const searchString = ref("");
   const isLoading = ref(false);

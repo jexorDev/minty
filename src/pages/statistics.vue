@@ -38,7 +38,7 @@
                 divided
                 density="compact"
             >
-            <v-radio v-for="enumItem in categoryReportingTypeEnum.getItems()" :label="enumItem.description" :value="enumItem.value"></v-radio>          
+            <v-radio v-for="enumItem in CategoryReportingTypeEnum.getItems()" :label="enumItem.description" :value="enumItem.value"></v-radio>          
             </v-radio-group>
             <v-list-item-action>
             <v-btn @click="reportingType = null" density="compact" color="secondary" variant="text">Reset</v-btn>
@@ -55,16 +55,29 @@
         <v-col cols="12" md="8">
             <v-card >
                 <v-card-title>
-                    <v-switch 
-                        v-model="showStackedBarChartList" 
-                        label="List View"
-                        density="compact">
-                    </v-switch>
+                    <v-menu>
+                        <template v-slot:activator="{ props }">
+                        <v-btn
+                            color="primary"
+                            variant="text"
+                            density="compact"
+                            append-icon="mdi-chevron-down"
+                            v-bind="props"
+                        >
+                            Chart Type
+                        </v-btn>
+                        </template>
+                        <v-list>
+                            <v-list-item :title="ChartTypeEnum.Bar.description" @click="selectedSpendingChartType = ChartTypeEnum.Bar.value"></v-list-item>                            
+                            <v-list-item :title="ChartTypeEnum.Table.description" @click="selectedSpendingChartType = ChartTypeEnum.Table.value"></v-list-item>                            
+                            <v-list-item :title="ChartTypeEnum.Heatmap.description" @click="selectedSpendingChartType = ChartTypeEnum.Heatmap.value"></v-list-item>                            
+                        </v-list>
+                    </v-menu>
                 </v-card-title>
                 <v-card-text>
-                    <apexchart v-if="!showStackedBarChartList" :options="spendingStackedBarChartOptions" :series="spendingStackedBarChartSeries"></apexchart>
-                    <v-data-table v-else :items="spendingTotalByYear" :headers="spendingTotalByYearHeaders" density="compact" hide-default-footer></v-data-table>
-                    <apexchart :options="spendingHeatMapChartOptions" :series="spendingHeatMapChartSeries"></apexchart>
+                    <apexchart v-if="selectedSpendingChartType === ChartTypeEnum.Bar.value" :options="spendingStackedBarChartOptions" :series="spendingStackedBarChartSeries"></apexchart>
+                    <v-data-table v-if="selectedSpendingChartType === ChartTypeEnum.Table.value" :items="spendingTotalByYear" :headers="spendingTotalByYearHeaders" density="compact" hide-default-footer></v-data-table>
+                    <apexchart v-if="selectedSpendingChartType === ChartTypeEnum.Heatmap.value" :options="spendingHeatMapChartOptions" :series="spendingHeatMapChartSeries"></apexchart>
                 </v-card-text>
             </v-card>
         </v-col>
@@ -85,15 +98,27 @@
                 </v-card-text>
             </v-card>       
             <v-card>
-                <v-card-title>
-                    <v-switch 
-                        v-model="showDonutChartList" 
-                        label="List View"
-                        density="compact">
-                    </v-switch>
+                 <v-card-title>
+                    <v-menu>
+                        <template v-slot:activator="{ props }">
+                        <v-btn
+                            color="primary"
+                            variant="text"
+                            density="compact"
+                            append-icon="mdi-chevron-down"
+                            v-bind="props"
+                        >
+                            Chart Type
+                        </v-btn>
+                        </template>
+                        <v-list>
+                            <v-list-item :title="ChartTypeEnum.Donut.description" @click="selectedCategoryChartType = ChartTypeEnum.Donut.value"></v-list-item>                            
+                            <v-list-item :title="ChartTypeEnum.Table.description" @click="selectedCategoryChartType = ChartTypeEnum.Table.value"></v-list-item>                            
+                        </v-list>
+                    </v-menu>
                 </v-card-title>
                 <v-card-text>                    
-                    <apexchart v-if="!showDonutChartList"  :options="sependingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
+                    <apexchart v-if="selectedCategoryChartType === ChartTypeEnum.Donut.value"  :options="sependingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
                     <DataTable v-else :data="spendingByCategoryTableData" :headers="[]"></DataTable>                    
                 </v-card-text>
             </v-card>            
@@ -104,12 +129,12 @@
 </template> 
 <script lang="ts" setup>
 import { useYearMonthMapAggregator } from '@/composables/data/YearMonthMapAggregatorComposable';
-import { useSpendingByMonthHeatmapChart } from '@/composables/SpendingByMonthHeatmapChartComposable';
-import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposable';
-import { useStackedSpendingBarChart } from '@/composables/SpendingStackedBarChartComposable';
-import YearCollectionModel from '@/data/classes/YearCollectionModel';
+import { useSpendingByMonthHeatmapChart } from '@/composables/charts/SpendingByMonthHeatmapChartComposable';
+import { useSpendingDonutChart } from '@/composables/charts/SpendingDonutChartComposable';
+import { useStackedSpendingBarChart } from '@/composables/charts/SpendingStackedBarChartComposable';
 import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
 import CategoryTypeEnum from '@/data/enumerations/CategoryType';
+import ChartTypeEnum from '@/data/enumerations/ChartTypeEnum';
 import MonthEnum from '@/data/enumerations/MonthEnum';
 import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthTotal';
 import StatisticsService from '@/data/services/StatisticsService';
@@ -118,6 +143,7 @@ import { useUserSettingsStore } from '@/stores/UserSettingsStore';
 import type { CategoryMonthAggregatorFilter } from '@/utilities/CategoryMonthAggregator';
 import { getCurrentYear } from '@/utilities/DateArithmeticUtility';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
+import { useCategoryAggregator, type CategoryAggregatorFilter } from '@/composables/data/CategoryAggregator';
 
 const selectedYear = ref(getCurrentYear());
 const filterCategoryId = ref<number | null>(null);
@@ -125,18 +151,22 @@ const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const showFilterDrawer = ref(true);
 const reportingType = ref<number | null>(null);
 
-const showStackedBarChartList = ref(false);
-const showDonutChartList = ref(false);
-const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
 const selectedComparisonYear = ref<number | undefined>(undefined);
 const categoryStore = useCategoryStore();
 const userSettingsStore = useUserSettingsStore();
+const grandTotal = computed<number>(() => {
+    var grandTotal = 0;
 
-const {options: sependingDonutChartOptions, series: spendingDonutChartSeries } = useSpendingDonutChart(categoryMonthTotals, selectedYear);
-const grandTotal = computed<number>(() => spendingStackedBarChartSeries.value.map(x => x.data).reduce((acc, curr) => acc + curr.reduce((a, c) => a + c, 0), 0));
+    for (const value of map.value.values()) {
+        grandTotal += value.getTotal();
+    }
+    return grandTotal;
+});
 const monthlyAverage = computed<number>(() => grandTotal.value / (12 * (selectedComparisonYear.value ?? 1)))
+const selectedSpendingChartType = ref(ChartTypeEnum.Bar.value);
+const selectedCategoryChartType = ref(ChartTypeEnum.Donut.value);
 
-onMounted(async () => {    
+onMounted(async () => {   
     await getData();
 });
 
@@ -153,19 +183,28 @@ async function getData() {
 const yearMonthMapFilter = computed<CategoryMonthAggregatorFilter>(() => {
    return {
     categoryId: filterCategoryId.value,
-    categoryType: new CategoryTypeEnum().Expense.value,
-    categoryReportingTypes: [new CategoryReportingTypeEnum().AlwaysInclude.value]
+    categoryType: CategoryTypeEnum.Expense.value,
+    categoryReportingTypes: [CategoryReportingTypeEnum.AlwaysInclude.value]
    } as CategoryMonthAggregatorFilter; 
 });
+const categoryAggregatorFilter = computed<CategoryAggregatorFilter>(() => {
+  return {
+    categoryId: filterCategoryId.value,
+    categoryType: CategoryTypeEnum.Expense.value,
+    categoryReportingTypes: [CategoryReportingTypeEnum.AlwaysInclude.value]
+  } as CategoryAggregatorFilter;
+});
 const { map } = useYearMonthMapAggregator(categoryMonthTotals, yearMonthMapFilter);
+const {aggregatedCategories} = useCategoryAggregator(categoryMonthTotals, categoryAggregatorFilter);
 const {options: spendingHeatMapChartOptions, series: spendingHeatMapChartSeries} = useSpendingByMonthHeatmapChart(map);
 const {options: spendingStackedBarChartOptions, series: spendingStackedBarChartSeries} = useStackedSpendingBarChart(map);
+const {options: sependingDonutChartOptions, series: spendingDonutChartSeries } = useSpendingDonutChart(aggregatedCategories);
 
 const spendingTotalByYearHeaders = computed(() => {
     const headerArray: any[] = [];
 
     headerArray.push({ title: 'Year', key: 'description' }  );
-    for (var month of new MonthEnum().getItems()) {
+    for (var month of MonthEnum.getItems()) {
         headerArray.push({ title: month.description, key: month.value.toString()}  )
     }
 
@@ -223,11 +262,7 @@ const spendingTotalByYear = computed(() => {
 });
 
   const spendingByCategoryTableData = computed(() => {
-    if (spendingDonutChartSeries.value.length > 0) {
-      return spendingDonutChartSeries.value[0].data;
-    } else {
-      return [];
-    }
+    return aggregatedCategories.value.map(x => {return {name: x.name, total: formatNumber(x.total, NumberFormats.Price)}});
   });
 
 watch(selectedYear, async () => await getData());

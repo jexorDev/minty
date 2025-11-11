@@ -14,7 +14,7 @@
             <template v-slot:append>
               <v-list-item-action class="flex-column align-end">
                 <small>{{ formatDate(transaction.transactionDate) }}</small>
-                <div :class="transaction.categoryType === categoryTypeEnum.Income.value ? 'text-primary' : ''">{{ formatAmount(transaction.amount, transaction.categoryType ?? categoryTypeEnum.Expense.value) }}</div>
+                <div :class="transaction.categoryType === CategoryTypeEnum.Income.value ? 'text-primary' : ''">{{ formatAmount(transaction.amount, transaction.categoryType ?? CategoryTypeEnum.Expense.value) }}</div>
               </v-list-item-action>
             </template>
           </v-list-item>
@@ -34,12 +34,10 @@ const emits = defineEmits<{
   (e: "selectedTransactionChanged", value: TransactionSearch): void
 }>();
 
-const categoryTypeEnum = new CategoryTypeEnum();
-
 function formatAmount(amount: number, categoryType: number): string {
-  if (categoryType === categoryTypeEnum.Transfer.value) {
+  if (categoryType === CategoryTypeEnum.Transfer.value) {
     amount = Math.abs(amount);
-  } else if (categoryType === categoryTypeEnum.Income.value) {
+  } else if (categoryType === CategoryTypeEnum.Income.value) {
     amount *= -1;
   }
 

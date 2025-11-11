@@ -9,12 +9,33 @@
           <v-icon icon="mdi-close" @click="showFilterDrawer = false"></v-icon>
         </template>
       </v-list-item>
-      <v-list-item>        
-        <v-list-item-subtitle>Year</v-list-item-subtitle>
-        <v-select :items="years" v-model="selectedYear" variant="outlined" density="compact"></v-select>
+      <v-list-item subtitle="Custom Date Range">
+        <template v-slot:append>
+          <v-switch v-model="customDateRange" density="compact" color="primary" class="mt-5"></v-switch>
+        </template>
       </v-list-item>
-      <v-list-item>
-        <v-list-item-subtitle>Month</v-list-item-subtitle>
+      <v-list-item subtitle="From" v-if="customDateRange">
+        <v-date-input 
+              v-model="customDateRangeFrom"
+              variant="outlined"
+              density="compact"
+              prepend-icon=""
+              prepend-inner-icon="mdi-calendar"
+              ></v-date-input>
+      </v-list-item>
+      <v-list-item subtitle="To" v-if="customDateRange">
+        <v-date-input 
+              v-model="customDateRangeTo"
+              variant="outlined"
+              density="compact"
+              prepend-icon=""
+              prepend-inner-icon="mdi-calendar"
+              ></v-date-input>
+      </v-list-item>
+      <v-list-item subtitle="Year" v-if="!customDateRange">
+        <v-select :items="userSettingsStore.yearsOfData" v-model="selectedYear" variant="outlined" density="compact"></v-select>
+      </v-list-item>
+      <v-list-item subtitle="Month" v-if="!customDateRange">        
         <v-chip-group 
           v-model="selectedMonth" 
           color="primary"  
@@ -23,13 +44,12 @@
           <v-chip v-for="month in monthEnum.getItems()">{{ month.description.substring(0, 3) }}</v-chip>          
       </v-chip-group>
       </v-list-item>
-      <v-list-item>
-        <v-list-item-subtitle>Category</v-list-item-subtitle>
+      <v-divider thickness="3" class="mb-2"></v-divider>
+      <v-list-item subtitle="Category">        
         <v-autocomplete clearable v-model="filterCategoryId" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
       </v-list-item>
-      <v-list-item>
-        
-        <v-list-item-subtitle>Reporting Type</v-list-item-subtitle>          
+      <v-divider thickness="3" class="mb-2"></v-divider>
+      <v-list-item subtitle="Reporting Type">
         <v-radio-group
             v-model="reportingType"
             base-color="secondary"
@@ -135,7 +155,7 @@
         <apexchart :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
       </v-card>
       <v-card>        
-        <v-data-table :items="tableData" :headers="headers" density="compact"></v-data-table>
+        <DataTable :data="tableData" :headers="headers" density="compact"></DataTable>
       </v-card>
     </v-col>
   </v-row>
@@ -150,21 +170,22 @@ import {useCategoryStore} from '@/stores/CategoryStore';
 import TransactionSearchService from '@/data/services/TransactionSearchService';
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
-import { getCurrentMonth, getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
-import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
+import { getCurrentDate, getCurrentYear, getDaysInMonth, getMonth } from '@/utilities/DateArithmeticUtility';
+import { createDate, DateFormats, formatDate } from '@/utilities/DateFormattingUtility';
 import MonthEnum from '@/data/enumerations/MonthEnum';
 import FileUploadDialog from '@/components/FileUploadDialog.vue';
 import { useSpendingFromTransactionsDonutChart } from '@/composables/SpendingFromTransactionsDonutChartComposable';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
+import { useUserSettingsStore } from '@/stores/UserSettingsStore';
 
   const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
   const showAddTransactionDialog = ref(false);
   const selectedYear = ref(getCurrentYear());
-  const years = ref<number[]>([]);
   const showUploadDialog = ref(false);
-  const selectedMonth = ref(getCurrentMonth());
+  const userSettingsStore = useUserSettingsStore();
+  const selectedMonth = ref(getMonth(userSettingsStore.userSettings.maxTransactionDate));
   const categoryStore = useCategoryStore();
   const reportingType = ref<number | null>(null);
   const filterCategoryId = ref<number | null>(null);
@@ -173,6 +194,9 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
   const quickFindMode = ref(false);
   const searchString = ref("");
   const isLoading = ref(false);
+  const customDateRange = ref(false);
+  const customDateRangeFrom = ref(formatDate(getCurrentDate(), DateFormats.ISO));
+  const customDateRangeTo = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const headers = [
     { title: 'Category', key: 'x' },
     { title: 'Total', key: 'y', value: (item: any) => formatNumber(item.y, NumberFormats.Price) }  
@@ -182,25 +206,28 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
   let timerId: number | null = null;
   
   onMounted(async () => {
-    for (var year = 2014; year <= getCurrentYear(); year++) {
-      years.value.push(year);
-    }
-    
     await getData();
-
   });
 
   async function getData(): Promise<void> {
-    const fromDate = createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO);
-    const toDate = createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate), DateFormats.ISO);
+    const fromDate = customDateRange.value ? formatDate(customDateRangeFrom.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO);
+    const toDate = customDateRange.value ? formatDate(customDateRangeTo.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate), DateFormats.ISO);
 
     try {
       isLoading.value = true;
-      transactions.value = await new TransactionSearchService()
-        .withUrlParameters({
-          fromDate: fromDate,
-          toDate: toDate
-        }).getMultiple();   
+      if (searchString.value) {
+        transactions.value = await new TransactionSearchService()
+            .withUrlParameters({
+            searchString: searchString.value
+            }).getMultiple();        
+      } else {
+        transactions.value = await new TransactionSearchService()
+          .withUrlParameters({
+            fromDate: fromDate,
+            toDate: toDate
+          }).getMultiple();   
+
+      }
     } finally {
       isLoading.value = false;
     }
@@ -219,14 +246,7 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
     }
 
     timerId = setTimeout(async () => {
-      try {
-        transactions.value = await new TransactionSearchService()
-            .withUrlParameters({
-            searchString: searchString
-            }).getMultiple();        
-      } finally {
-        isLoading.value = false;
-      }
+      await getData();
     }, 1000);       
   }
 
@@ -251,6 +271,9 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
 
   watch(selectedYear, async () => await getData());
   watch(selectedMonth, async () => await getData());
+  watch(customDateRange, async () => await getData());
+  watch(customDateRangeFrom, async () => await getData());
+  watch(customDateRangeTo, async () => await getData());
 
   watch(quickFindMode, () => {
     transactions.value = [];

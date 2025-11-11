@@ -17,17 +17,20 @@
                         label="Username"
                         type="input"
                         class="mt-5"
+                        variant="outlined"
                         ></v-text-field>
                         <v-text-field      
                         v-model="password"
                         label="Password"
                         type="password"
+                        variant="outlined"
                         ></v-text-field>
                         <v-text-field 
                         v-if="mode === 1"     
                         v-model="passwordConfirm"
                         label="Confirm Password"
                         type="password"
+                        variant="outlined"
                         ></v-text-field>
                 </v-card-item>
                 <v-card-actions>

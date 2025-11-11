@@ -2,7 +2,7 @@
   <v-container fluid>
 
     <v-row>
-      <v-col>
+      <v-col cols="12" md="4">
         <v-card color="secondary-darken-1">
           <v-card-title>
             Expenses
@@ -27,7 +27,7 @@
           </v-card-text>
         </v-card>
       </v-col>
-      <v-col>
+      <v-col  cols="12" md="4">
         <v-card color="secondary-darken-1">
           <v-card-title>
             Income
@@ -63,7 +63,7 @@
           title="Spending Over Time Comparison"
           subtitle="This year vs last year">
           <v-card-text>
-            <apexchart  height="350" width="600" :options="spendingAreaChartOptions" :series="spendingAreaChartSeries"></apexchart>
+            <apexchart  :options="spendingAreaChartOptions" :series="spendingAreaChartSeries"></apexchart>
           </v-card-text>
         </v-card>
         
@@ -83,8 +83,8 @@
             
           </template>          
           <v-card-text>
-            <apexchart v-if="selectedSpendingByCategoryChartType === 1" height="350" width="600" :options="spendingTreemapChartOptions" :series="spendingTreemapChartSeries"></apexchart>
-            <apexchart v-else height="350" width="600" :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
+            <apexchart v-if="selectedSpendingByCategoryChartType === 1" :options="spendingTreemapChartOptions" :series="spendingTreemapChartSeries"></apexchart>
+            <apexchart v-else :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
 
           </v-card-text>
 

@@ -100,6 +100,7 @@ import AccountService from '../data/services/AccountService';
 import { useErrorStore } from '@/stores/ErrorStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
+import { useUserSettingsStore } from '@/stores/UserSettingsStore';
 
 const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
@@ -107,6 +108,7 @@ const accountStore = useAccountStore();
 const errorStore = useErrorStore();
 const snackbarStore = useSnackbarStore();
 const confirmationStore = useConfirmationStore();
+const userSettingsStore = useUserSettingsStore();
 
 const { mobile } = useDisplay()
 
@@ -122,7 +124,8 @@ onMounted(async () => {
     await Promise.all([
       categoryStore.categories = await new CategoryService().getMultiple(),
       merchantStore.merchants = await new MerchantService().getMultiple(),
-      accountStore.accounts = await new AccountService().getMultiple()
+      accountStore.accounts = await new AccountService().getMultiple(),
+      await userSettingsStore.refreshUserSettings()
     ]);
   }
 })

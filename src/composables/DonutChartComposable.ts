@@ -4,7 +4,6 @@ export function useDonutChart(showLegend: boolean) {
 
     const options = ref({
       chart: {
-        width: 380,
         type: 'donut',
         background: '00'
       },
@@ -30,18 +29,7 @@ export function useDonutChart(showLegend: boolean) {
         formatter: function(value: any) {      
           return formatNumber(value / 100, NumberFormats.Percentage);
         }
-      },
-      responsive: [{
-        breakpoint: 480,
-        options: {
-          chart: {
-            width: 200
-          },
-          legend: {
-            position: 'bottom'
-          }
-        }
-      }]
+      }
     });
 
     return {options};

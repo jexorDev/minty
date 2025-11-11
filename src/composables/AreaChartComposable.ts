@@ -4,7 +4,6 @@ import type { Ref } from "vue";
 export function useAreaChart(xAxisCategories: Ref<string[]>) {
   const options = ref({
       chart: {
-        height: 350,
         type: 'area',
         zoom: {
           enabled: false
@@ -14,7 +13,7 @@ export function useAreaChart(xAxisCategories: Ref<string[]>) {
         },
         background: "00"
       },
-      colors: ['#50C878', '#6C3BAA'],
+      colors: ['#50C878', '#6C3BAA', '#2196F3', '#B00020'],
       theme: {
         mode: 'dark'
       },            

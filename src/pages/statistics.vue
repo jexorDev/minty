@@ -10,7 +10,7 @@
         </v-list-item>
         <v-list-item>        
             <v-list-item-subtitle>Year</v-list-item-subtitle>
-            <v-select :items="years" v-model="selectedYear" variant="outlined" density="compact"></v-select>
+            <v-select :items="userSettingsStore.yearsOfData" v-model="selectedYear" variant="outlined" density="compact"></v-select>
         </v-list-item>
         <v-list-item>
             <v-list-item-subtitle>Comparison with</v-list-item-subtitle>
@@ -63,7 +63,8 @@
                 </v-card-title>
                 <v-card-text>
                     <apexchart v-if="!showStackedBarChartList" :options="spendingStackedBarChartOptions" :series="spendingStackedBarChartSeries"></apexchart>
-                    <v-data-table v-else :items="spendingTotalByYear" density="compact" hide-default-footer></v-data-table>
+                    <v-data-table v-else :items="spendingTotalByYear" :headers="spendingTotalByYearHeaders" density="compact" hide-default-footer></v-data-table>
+                    <apexchart :options="spendingHeatMapChartOptions" :series="spendingHeatMapChartSeries"></apexchart>
                 </v-card-text>
             </v-card>
         </v-col>
@@ -102,17 +103,23 @@
 
 </template> 
 <script lang="ts" setup>
+import { useYearMonthMapAggregator } from '@/composables/data/YearMonthMapAggregatorComposable';
+import { useSpendingByMonthHeatmapChart } from '@/composables/SpendingByMonthHeatmapChartComposable';
 import { useSpendingDonutChart } from '@/composables/SpendingDonutChartComposable';
 import { useStackedSpendingBarChart } from '@/composables/SpendingStackedBarChartComposable';
+import YearCollectionModel from '@/data/classes/YearCollectionModel';
 import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
+import CategoryTypeEnum from '@/data/enumerations/CategoryType';
+import MonthEnum from '@/data/enumerations/MonthEnum';
 import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthTotal';
 import StatisticsService from '@/data/services/StatisticsService';
 import { useCategoryStore } from '@/stores/CategoryStore';
+import { useUserSettingsStore } from '@/stores/UserSettingsStore';
+import type { CategoryMonthAggregatorFilter } from '@/utilities/CategoryMonthAggregator';
 import { getCurrentYear } from '@/utilities/DateArithmeticUtility';
-import { formatNumber } from '@/utilities/NumberFormattingUtility';
+import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 
 const selectedYear = ref(getCurrentYear());
-const years = ref<number[]>([]);
 const filterCategoryId = ref<number | null>(null);
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const showFilterDrawer = ref(true);
@@ -123,17 +130,13 @@ const showDonutChartList = ref(false);
 const categoryReportingTypeEnum = new CategoryReportingTypeEnum();
 const selectedComparisonYear = ref<number | undefined>(undefined);
 const categoryStore = useCategoryStore();
-const {options: spendingStackedBarChartOptions, series: spendingStackedBarChartSeries} = useStackedSpendingBarChart(categoryMonthTotals, filterCategoryId);
-const {options: sependingDonutChartOptions, series: spendingDonutChartSeries } = useSpendingDonutChart(categoryMonthTotals, selectedYear);
+const userSettingsStore = useUserSettingsStore();
 
+const {options: sependingDonutChartOptions, series: spendingDonutChartSeries } = useSpendingDonutChart(categoryMonthTotals, selectedYear);
 const grandTotal = computed<number>(() => spendingStackedBarChartSeries.value.map(x => x.data).reduce((acc, curr) => acc + curr.reduce((a, c) => a + c, 0), 0));
 const monthlyAverage = computed<number>(() => grandTotal.value / (12 * (selectedComparisonYear.value ?? 1)))
 
-onMounted(async () => {
-    for (var year = 2014; year <= getCurrentYear(); year++) {
-        years.value.push(year);
-    }  
-    
+onMounted(async () => {    
     await getData();
 });
 
@@ -147,94 +150,76 @@ async function getData() {
     }).getMultiple();
 }
 
+const yearMonthMapFilter = computed<CategoryMonthAggregatorFilter>(() => {
+   return {
+    categoryId: filterCategoryId.value,
+    categoryType: new CategoryTypeEnum().Expense.value,
+    categoryReportingTypes: [new CategoryReportingTypeEnum().AlwaysInclude.value]
+   } as CategoryMonthAggregatorFilter; 
+});
+const { map } = useYearMonthMapAggregator(categoryMonthTotals, yearMonthMapFilter);
+const {options: spendingHeatMapChartOptions, series: spendingHeatMapChartSeries} = useSpendingByMonthHeatmapChart(map);
+const {options: spendingStackedBarChartOptions, series: spendingStackedBarChartSeries} = useStackedSpendingBarChart(map);
 
-const donutChartYears = computed<number[]>(() => {
-    const years: number[] = [];
+const spendingTotalByYearHeaders = computed(() => {
+    const headerArray: any[] = [];
 
-    for (var i = 0; i < (selectedComparisonYear.value ?? 0); i++) {
-        years.push(selectedYear.value - i);
+    headerArray.push({ title: 'Year', key: 'description' }  );
+    for (var month of new MonthEnum().getItems()) {
+        headerArray.push({ title: month.description, key: month.value.toString()}  )
     }
 
-    return years;
-})
+    headerArray.push({ title: 'Total', key: 'total' }  );
+    headerArray.push({ title: 'Average', key: 'average' }  );
+
+    return headerArray;
+});
 
 const spendingTotalByYear = computed(() => {
-    const array: {
-        year: string, 
-        janTotal: number, 
-        febTotal: number, 
-        marTotal: number, 
-        aprTotal: number, 
-        mayTotal: number, 
-        junTotal: number, 
-        julTotal: number, 
-        augTotal: number, 
-        sepTotal: number, 
-        octTotal: number, 
-        novTotal: number, 
-        decTotal: number, 
-        total: number
-    }[] = [];
+    const yearsData: any[]  = [];
+    const yearsDataFormatted: any[]  = [];
 
-    for (var yearIndex = 0; yearIndex < spendingStackedBarChartSeries.value.length; yearIndex++) {
-        const currDataSet = spendingStackedBarChartSeries.value[yearIndex];
-        array.push({
-            year: currDataSet.name, 
-            janTotal: currDataSet.data[0], 
-            febTotal: currDataSet.data[1], 
-            marTotal: currDataSet.data[2], 
-            aprTotal: currDataSet.data[3], 
-            mayTotal: currDataSet.data[4], 
-            junTotal: currDataSet.data[5], 
-            julTotal: currDataSet.data[6], 
-            augTotal: currDataSet.data[7], 
-            sepTotal: currDataSet.data[8], 
-            octTotal: currDataSet.data[9], 
-            novTotal: currDataSet.data[10], 
-            decTotal: currDataSet.data[11], 
-            total: currDataSet.data.reduce((acc, curr) => acc + curr, 0)});
+    for (const [key, value] of map.value) {
+        var yearData: any = {};
+        var yearDataFormatted: any = {};
+        yearDataFormatted.description = key.toString();
+
+        for (var monthIndex = 0; monthIndex < 12; monthIndex++) {
+            yearDataFormatted[`${monthIndex}`] = formatNumber(value.getMonthData(monthIndex), NumberFormats.Price);
+            yearData[`${monthIndex}`] = value.getMonthData(monthIndex);
+        }
+
+        yearDataFormatted.total = formatNumber(value.getTotal(), NumberFormats.Price);
+        yearDataFormatted.average = formatNumber(value.getAverage(), NumberFormats.Price);
+
+        yearData.total = value.getTotal();
+
+        yearsData.push(yearData);
+        yearsDataFormatted.push(yearDataFormatted);
     }
 
-    if (spendingStackedBarChartSeries.value.length > 1) {
-        const grandTotalLine = {
-            year: "MonthTotal", 
-            janTotal: array.map(x => x.janTotal).reduce((acc, curr) => acc + curr, 0), 
-            febTotal: array.map(x => x.febTotal).reduce((acc, curr) => acc + curr, 0), 
-            marTotal: array.map(x => x.marTotal).reduce((acc, curr) => acc + curr, 0), 
-            aprTotal: array.map(x => x.aprTotal).reduce((acc, curr) => acc + curr, 0), 
-            mayTotal: array.map(x => x.mayTotal).reduce((acc, curr) => acc + curr, 0), 
-            junTotal: array.map(x => x.junTotal).reduce((acc, curr) => acc + curr, 0), 
-            julTotal: array.map(x => x.julTotal).reduce((acc, curr) => acc + curr, 0), 
-            augTotal: array.map(x => x.augTotal).reduce((acc, curr) => acc + curr, 0), 
-            sepTotal: array.map(x => x.sepTotal).reduce((acc, curr) => acc + curr, 0), 
-            octTotal: array.map(x => x.octTotal).reduce((acc, curr) => acc + curr, 0), 
-            novTotal: array.map(x => x.novTotal).reduce((acc, curr) => acc + curr, 0), 
-            decTotal: array.map(x => x.decTotal).reduce((acc, curr) => acc + curr, 0), 
-            total: array.map(x => x.total).reduce((acc, curr) => acc + curr, 0)
+    if (yearsData.length > 1) {
+        var totalData: any = {};
+        var averageData: any = {};
+        totalData.description = "Total"
+        averageData.description = "Average";
+    
+        for (var monthIndex = 0; monthIndex < 12; monthIndex++) {
+            var yearMonthTotal = 0;
+            for (var yearIndex = 0; yearIndex < yearsData.length; yearIndex++) {
+                yearMonthTotal += yearsData[yearIndex][`${monthIndex}`];
+            }
+    
+            totalData[`${monthIndex}`] = formatNumber(yearMonthTotal, NumberFormats.Price);
+            averageData[`${monthIndex}`] = formatNumber(yearMonthTotal / yearsData.length, NumberFormats.Price);
         }
     
-        const averageLine = {
-            year: "Average",
-            janTotal: grandTotalLine.janTotal / spendingStackedBarChartSeries.value.length,
-            febTotal: grandTotalLine.febTotal / spendingStackedBarChartSeries.value.length,
-            marTotal: grandTotalLine.marTotal / spendingStackedBarChartSeries.value.length,
-            aprTotal: grandTotalLine.aprTotal / spendingStackedBarChartSeries.value.length,
-            mayTotal: grandTotalLine.mayTotal / spendingStackedBarChartSeries.value.length,
-            junTotal: grandTotalLine.junTotal / spendingStackedBarChartSeries.value.length,
-            julTotal: grandTotalLine.julTotal / spendingStackedBarChartSeries.value.length,
-            augTotal: grandTotalLine.augTotal / spendingStackedBarChartSeries.value.length,
-            sepTotal: grandTotalLine.sepTotal / spendingStackedBarChartSeries.value.length,
-            octTotal: grandTotalLine.octTotal / spendingStackedBarChartSeries.value.length,
-            novTotal: grandTotalLine.novTotal / spendingStackedBarChartSeries.value.length,
-            decTotal: grandTotalLine.decTotal / spendingStackedBarChartSeries.value.length,
-            total: grandTotalLine.total / spendingStackedBarChartSeries.value.length
-        }
-    
-        array.push(grandTotalLine);
-        array.push(averageLine);
+        yearsDataFormatted.push(totalData);
+        yearsDataFormatted.push(averageData);
     }
 
-    return array;
+
+    return yearsDataFormatted;
 });
 
   const spendingByCategoryTableData = computed(() => {

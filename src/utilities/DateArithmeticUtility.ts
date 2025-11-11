@@ -20,3 +20,7 @@ export function getDaysInMonth(date: string | Dayjs | Date): number {
 export function getMonth(date: string | Dayjs | Date): number {
     return dayjs(date).month();
 }
+
+export function getYear(date: string | Dayjs | Date): number {
+    return dayjs(date).year();
+}

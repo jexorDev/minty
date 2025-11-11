@@ -5,7 +5,6 @@ export function useBarChart(labels: string[]) {
     const options = ref({
         chart: {
             type: 'bar',
-            height: 350,  
             toolbar: {
                 show: false
             },

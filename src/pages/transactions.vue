@@ -74,6 +74,7 @@
         append-icon="mdi-file-table-outline"
         variant="text"
         class="mr-1"
+        @click="exportData"
       >
         Export
       </v-btn>
@@ -155,7 +156,7 @@
         <apexchart :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
       </v-card>
       <v-card>        
-        <DataTable :data="tableData" :headers="headers" density="compact"></DataTable>
+        <DataTable :data="spendingByCategoryTableData" :headers="headers" density="compact"></DataTable>
       </v-card>
     </v-col>
   </v-row>
@@ -177,6 +178,8 @@ import FileUploadDialog from '@/components/FileUploadDialog.vue';
 import { useSpendingFromTransactionsDonutChart } from '@/composables/charts/SpendingFromTransactionsDonutChartComposable';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 import { useUserSettingsStore } from '@/stores/UserSettingsStore';
+import { useCategoryAggregatorTransactionSearch } from '@/composables/data/CategoryAggregatorTransactionSearch';
+import GenericService from '@/data/services/GenericService';
 
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
@@ -199,17 +202,18 @@ import { useUserSettingsStore } from '@/stores/UserSettingsStore';
     { title: 'Category', key: 'x' },
     { title: 'Total', key: 'y', value: (item: any) => formatNumber(item.y, NumberFormats.Price) }  
   ];
-
-  const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingFromTransactionsDonutChart(transactions, filterCategoryId, reportingType);
+const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(transactions, filterCategoryId, reportingType)
+  const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingFromTransactionsDonutChart(aggregatedCategories);
   let timerId: number | null = null;
   
   onMounted(async () => {
     await getData();
   });
 
+  const fromDate = computed(() => customDateRange.value ? formatDate(customDateRangeFrom.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO));
+  const toDate = computed(() => customDateRange.value ? formatDate(customDateRangeTo.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate.value), DateFormats.ISO));
+
   async function getData(): Promise<void> {
-    const fromDate = customDateRange.value ? formatDate(customDateRangeFrom.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO);
-    const toDate = customDateRange.value ? formatDate(customDateRangeTo.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate), DateFormats.ISO);
 
     try {
       isLoading.value = true;
@@ -221,8 +225,8 @@ import { useUserSettingsStore } from '@/stores/UserSettingsStore';
       } else {
         transactions.value = await new TransactionSearchService()
           .withUrlParameters({
-            fromDate: fromDate,
-            toDate: toDate
+            fromDate: fromDate.value,
+            toDate: toDate.value
           }).getMultiple();   
 
       }
@@ -230,6 +234,19 @@ import { useUserSettingsStore } from '@/stores/UserSettingsStore';
       isLoading.value = false;
     }
   }  
+
+async function exportData(): Promise<void> {
+  const file = await new GenericService("search").withRouteParameter("export")
+     .withUrlParameters({
+            fromDate: fromDate.value,
+            toDate: toDate.value
+          }).getFile();
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(file);
+  link.download = `MintyExport${formatDate(getCurrentDate(), "YYYYMMDDHHMM")}`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 
   function searchUpdate(searchString: string): void {
     if (timerId) {
@@ -261,6 +278,10 @@ import { useUserSettingsStore } from '@/stores/UserSettingsStore';
   });
 
   const resultCount = computed(() => transactions.value.length);
+
+const spendingByCategoryTableData = computed(() => {
+  return aggregatedCategories.value.map(x => {return {name: x.name, total: formatNumber(x.total, NumberFormats.Price)}});
+});
 
   function setTransactionToEdit(transaction?: TransactionSearch) {
     selectedTransaction.value = transaction;

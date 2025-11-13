@@ -6,4 +6,5 @@ export default class ImportFileTypeEnum extends BaseEnum {
     public static Table: EnumItem = {value: 2, description: "Table"};   
     public static Donut: EnumItem = {value: 3, description: "Donut"}; 
     public static Heatmap: EnumItem = {value: 4, description: "Heatmap"}; 
+    public static Treemap: EnumItem = {value: 5, description: "Treemap"}; 
 }

@@ -1,10 +1,10 @@
 export default class YearCollectionModel {
 
-    readonly yearData: number[] = [];
+    public readonly yearData: number[] = [];
 
-    constructor() {
+    constructor(yearData?: number[]) {
         for (var i = 0; i < 12; i++) {
-            this.yearData[i] = 0;
+            this.yearData[i] = yearData ? yearData[i] : 0;
         }
     }
 
@@ -22,5 +22,11 @@ export default class YearCollectionModel {
 
     public getAverage(): number {
         return this.getTotal() / 12;
+    }
+
+    public negateValues(): void {
+        for (var i = 0; i < 12; i++) {
+            this.yearData[i] *= -1;
+        }
     }
 }

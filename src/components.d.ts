@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AccountAddEditForm: typeof import('./components/AccountAddEditForm.vue')['default']
     AppFooter: typeof import('./components/AppFooter.vue')['default']
+    CashflowCard: typeof import('./components/CashflowCard.vue')['default']
     CategoryAddEditForm: typeof import('./components/CategoryAddEditForm.vue')['default']
     Dashboard: typeof import('./components/Dashboard.vue')['default']
     DataTable: typeof import('./components/DataTable.vue')['default']

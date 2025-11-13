@@ -12,7 +12,7 @@
             <v-list-item-subtitle>Year</v-list-item-subtitle>
             <v-select :items="userSettingsStore.yearsOfData" v-model="selectedYear" variant="outlined" density="compact"></v-select>
         </v-list-item>
-        <v-list-item>
+        <v-list-item v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value">
             <v-list-item-subtitle>Comparison with</v-list-item-subtitle>
             <v-chip-group 
                 v-model="selectedComparisonYear"            
@@ -25,9 +25,9 @@
         </v-chip-group>
            
         </v-list-item>
-        <v-list-item>
+        <v-list-item v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value">
             <v-list-item-subtitle>Category</v-list-item-subtitle>
-            <v-autocomplete clearable v-model="filterCategoryId" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
+            <v-autocomplete clearable v-model="filterCategoryId" :items="filteredCategories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
         </v-list-item>
         <v-list-item>            
             <v-list-item-subtitle>Reporting Type</v-list-item-subtitle>          
@@ -47,11 +47,29 @@
         </v-list>
     </v-navigation-drawer>
     <v-toolbar color="secondary-darken-1" density="compact">
+        <v-menu>
+            <template v-slot:activator="{ props }">
+                <v-btn
+                    color="primary"
+                    variant="text"
+                    density="compact"
+                    append-icon="mdi-chevron-down"
+                    v-bind="props"
+                >
+                    {{  StatisticsPageViewTypeEnum.getItemByValue(selectedViewType)?.description }}
+                </v-btn>
+            </template>
+            <v-list>
+                <v-list-item v-for="item of StatisticsPageViewTypeEnum.getItems()" :title="item.description" @click="selectedViewType = item.value"></v-list-item>                            
+            </v-list>
+        </v-menu>
         <v-spacer></v-spacer>
         <v-btn @click="showFilterDrawer = !showFilterDrawer" prepend-icon="mdi-filter-variant" color="primary" :variant="showFilterDrawer ? `flat` : `outlined`">Filter</v-btn>
     </v-toolbar>
-        
-    <v-row no-gutters>
+    
+    <v-container fluid>
+    
+    <v-row>
         <v-col cols="12" md="8">
             <v-card >
                 <v-card-title>
@@ -75,29 +93,37 @@
                     </v-menu>
                 </v-card-title>
                 <v-card-text>
-                    <apexchart v-if="selectedSpendingChartType === ChartTypeEnum.Bar.value" :options="spendingStackedBarChartOptions" :series="spendingStackedBarChartSeries"></apexchart>
+                    <apexchart :key="key" v-if="selectedSpendingChartType === ChartTypeEnum.Bar.value" :options="spendingStackedBarChartOptions" :series="spendingStackedBarChartSeries"></apexchart>
                     <v-data-table v-if="selectedSpendingChartType === ChartTypeEnum.Table.value" :items="spendingTotalByYear" :headers="spendingTotalByYearHeaders" density="compact" hide-default-footer></v-data-table>
                     <apexchart v-if="selectedSpendingChartType === ChartTypeEnum.Heatmap.value" :options="spendingHeatMapChartOptions" :series="spendingHeatMapChartSeries"></apexchart>
                 </v-card-text>
             </v-card>
         </v-col>
         <v-col cols="12" md="4">     
-             <v-card color="secondary-darken-1" class="my-2">
+             <v-card color="secondary-darken-1" class="mb-2">
                 <v-card-text>
                     <v-row>
                         <v-col>
                             <div class="text-overline">Total</div>
-                            {{ formatNumber(grandTotal) }}
+                            <span class="font-weight-medium">
+                                {{ formatNumber(grandTotal, NumberFormats.Price) }}
+                            </span>
 
                         </v-col>
                         <v-col>
                             <div class="text-overline">Monthly Avg</div>
-                            {{ formatNumber(monthlyAverage) }}
+                            <span class="font-weight-medium">
+                                {{ formatNumber(monthlyAverage, NumberFormats.Price) }}
+
+                            </span>
                         </v-col>
                     </v-row>
                 </v-card-text>
             </v-card>       
-            <v-card>
+            <CashflowCard v-if="selectedViewType === StatisticsPageViewTypeEnum.NetIncome.value"
+                :total-income="incomeTotal"
+                :total-expenses="expensesTotal"></CashflowCard>
+            <v-card v-else>
                  <v-card-title>
                     <v-menu>
                         <template v-slot:activator="{ props }">
@@ -113,23 +139,25 @@
                         </template>
                         <v-list>
                             <v-list-item :title="ChartTypeEnum.Donut.description" @click="selectedCategoryChartType = ChartTypeEnum.Donut.value"></v-list-item>                            
-                            <v-list-item :title="ChartTypeEnum.Table.description" @click="selectedCategoryChartType = ChartTypeEnum.Table.value"></v-list-item>                            
+                            <v-list-item :title="ChartTypeEnum.Treemap.description" @click="selectedCategoryChartType = ChartTypeEnum.Treemap.value"></v-list-item>                            
                         </v-list>
                     </v-menu>
                 </v-card-title>
                 <v-card-text>                    
                     <apexchart v-if="selectedCategoryChartType === ChartTypeEnum.Donut.value"  :options="sependingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
-                    <DataTable v-else :data="spendingByCategoryTableData" :headers="[]"></DataTable>                    
+                    <apexchart v-else :options="spendingTreemapChartOptions" :series="spendingTreemapChartSeries"></apexchart>
+                    <DataTable :data="spendingByCategoryTableData" :headers="[]"></DataTable>                    
                 </v-card-text>
             </v-card>            
            
         </v-col>
     </v-row>
-
+</v-container>
 </template> 
 <script lang="ts" setup>
-import { useYearMonthMapAggregator } from '@/composables/data/YearMonthMapAggregatorComposable';
+import { useYearMonthMapAggregator, type YearMonthAggregatorFilter } from '@/composables/data/YearMonthMapAggregatorComposable';
 import { useSpendingByMonthHeatmapChart } from '@/composables/charts/SpendingByMonthHeatmapChartComposable';
+import { useSpendingTreemapChart } from '@/composables/charts/SpendingTreemapChartComposable';
 import { useSpendingDonutChart } from '@/composables/charts/SpendingDonutChartComposable';
 import { useStackedSpendingBarChart } from '@/composables/charts/SpendingStackedBarChartComposable';
 import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
@@ -140,24 +168,43 @@ import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthT
 import StatisticsService from '@/data/services/StatisticsService';
 import { useCategoryStore } from '@/stores/CategoryStore';
 import { useUserSettingsStore } from '@/stores/UserSettingsStore';
-import type { CategoryMonthAggregatorFilter } from '@/utilities/CategoryMonthAggregator';
 import { getCurrentYear } from '@/utilities/DateArithmeticUtility';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 import { useCategoryAggregator, type CategoryAggregatorFilter } from '@/composables/data/CategoryAggregator';
+import StatisticsPageViewTypeEnum from '@/data/enumerations/StatisticsPageViewType';
+import YearCollectionModel from '@/data/classes/YearCollectionModel';
 
 const selectedYear = ref(getCurrentYear());
 const filterCategoryId = ref<number | null>(null);
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const showFilterDrawer = ref(true);
 const reportingType = ref<number | null>(null);
-
+const selectedViewType = ref<number>(StatisticsPageViewTypeEnum.Expenses.value);
 const selectedComparisonYear = ref<number | undefined>(undefined);
 const categoryStore = useCategoryStore();
-const userSettingsStore = useUserSettingsStore();
+const userSettingsStore = useUserSettingsStore();  
+const key = ref(0);
+
 const grandTotal = computed<number>(() => {
     var grandTotal = 0;
 
-    for (const value of map.value.values()) {
+    for (const value of currentMap.value.values()) {
+        grandTotal += value.getTotal();
+    }
+    return grandTotal;
+});
+const expensesTotal = computed<number>(() => {
+    var grandTotal = 0;
+
+    for (const value of expensesMap.value.values()) {
+        grandTotal += value.getTotal();
+    }
+    return grandTotal;
+});
+const incomeTotal = computed<number>(() => {
+    var grandTotal = 0;
+
+    for (const value of incomeMap.value.values()) {
         grandTotal += value.getTotal();
     }
     return grandTotal;
@@ -176,29 +223,68 @@ async function getData() {
 
     categoryMonthTotals.value = await new StatisticsService().withUrlParameters({
         "fromDate": fromDate,
-        "toDate": toDate
+        "toDate": toDate,
+        "includeIgnored": false
     }).getMultiple();
 }
 
-const yearMonthMapFilter = computed<CategoryMonthAggregatorFilter>(() => {
+const expenseYearMonthMapFilter = computed<YearMonthAggregatorFilter>(() => {
    return {
     categoryId: filterCategoryId.value,
-    categoryType: CategoryTypeEnum.Expense.value,
-    categoryReportingTypes: [CategoryReportingTypeEnum.AlwaysInclude.value]
-   } as CategoryMonthAggregatorFilter; 
+    categoryType: CategoryTypeEnum.Expense.value
+   } as YearMonthAggregatorFilter; 
+});
+const incomeYearMonthMapFilter = computed<YearMonthAggregatorFilter>(() => {
+   return {
+    categoryId: filterCategoryId.value,
+    categoryType: CategoryTypeEnum.Income.value
+   } as YearMonthAggregatorFilter; 
 });
 const categoryAggregatorFilter = computed<CategoryAggregatorFilter>(() => {
   return {
     categoryId: filterCategoryId.value,
-    categoryType: CategoryTypeEnum.Expense.value,
-    categoryReportingTypes: [CategoryReportingTypeEnum.AlwaysInclude.value]
+    categoryType: selectedViewType.value === StatisticsPageViewTypeEnum.Expenses.value ? CategoryTypeEnum.Expense.value : CategoryTypeEnum.Income.value,
   } as CategoryAggregatorFilter;
 });
-const { map } = useYearMonthMapAggregator(categoryMonthTotals, yearMonthMapFilter);
+
+const { map: expensesMap } = useYearMonthMapAggregator(categoryMonthTotals, expenseYearMonthMapFilter);
+const { map: incomeMap } = useYearMonthMapAggregator(categoryMonthTotals, incomeYearMonthMapFilter);
 const {aggregatedCategories} = useCategoryAggregator(categoryMonthTotals, categoryAggregatorFilter);
-const {options: spendingHeatMapChartOptions, series: spendingHeatMapChartSeries} = useSpendingByMonthHeatmapChart(map);
-const {options: spendingStackedBarChartOptions, series: spendingStackedBarChartSeries} = useStackedSpendingBarChart(map);
+
+const netIncomeMap = computed(() => {
+    const mergedMap: Map<string, YearCollectionModel> = new Map();
+
+    for (const [key, value] of expensesMap.value) {        
+        const newExpenses = new YearCollectionModel(value.yearData);
+        newExpenses.negateValues();
+        mergedMap.set(`${key} Expenses`, newExpenses);
+    }
+
+    for (const [key, value] of incomeMap.value) {
+        mergedMap.set(`${key} Income`, value);
+    }
+
+    return mergedMap;
+});
+
+const currentMap = computed(() => {
+    if (selectedViewType.value === StatisticsPageViewTypeEnum.Expenses.value) {
+        return expensesMap.value;
+    } else if (selectedViewType.value === StatisticsPageViewTypeEnum.Income.value) {
+        return incomeMap.value;
+    } else {
+        return netIncomeMap.value;
+    }
+})
+
+const filteredCategories = computed(() => selectedViewType.value === StatisticsPageViewTypeEnum.Expenses.value 
+                                            ? categoryStore.categories.filter(x => x.type === CategoryTypeEnum.Expense.value) 
+                                            : categoryStore.categories.filter(x => x.type === CategoryTypeEnum.Income.value));
+const isNetIncomeChart = computed(() => selectedViewType.value === StatisticsPageViewTypeEnum.NetIncome.value);
+const {options: spendingHeatMapChartOptions, series: spendingHeatMapChartSeries} = useSpendingByMonthHeatmapChart(expensesMap);
+const {options: spendingStackedBarChartOptions, series: spendingStackedBarChartSeries} = useStackedSpendingBarChart(currentMap, isNetIncomeChart);
 const {options: sependingDonutChartOptions, series: spendingDonutChartSeries } = useSpendingDonutChart(aggregatedCategories);
+const {options: spendingTreemapChartOptions, series: spendingTreemapChartSeries} = useSpendingTreemapChart(aggregatedCategories);
 
 const spendingTotalByYearHeaders = computed(() => {
     const headerArray: any[] = [];
@@ -218,7 +304,7 @@ const spendingTotalByYear = computed(() => {
     const yearsData: any[]  = [];
     const yearsDataFormatted: any[]  = [];
 
-    for (const [key, value] of map.value) {
+    for (const [key, value] of currentMap.value) {
         var yearData: any = {};
         var yearDataFormatted: any = {};
         yearDataFormatted.description = key.toString();
@@ -261,11 +347,17 @@ const spendingTotalByYear = computed(() => {
     return yearsDataFormatted;
 });
 
-  const spendingByCategoryTableData = computed(() => {
+const spendingByCategoryTableData = computed(() => {
     return aggregatedCategories.value.map(x => {return {name: x.name, total: formatNumber(x.total, NumberFormats.Price)}});
-  });
+});
 
 watch(selectedYear, async () => await getData());
 watch(selectedComparisonYear, async () => await getData());
-
+watch(selectedViewType, (newValue, oldValue) => {
+    filterCategoryId.value = null;
+    if (newValue === StatisticsPageViewTypeEnum.NetIncome.value || oldValue === StatisticsPageViewTypeEnum.NetIncome.value){
+        selectedComparisonYear.value = undefined;        
+        key.value++
+    }
+});
 </script>

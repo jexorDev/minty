@@ -43,7 +43,7 @@ export default abstract class BaseService<T> {
 
     async getSingle(): Promise<T> {        
         const res = await this.axiosInstance.get(this.url, {
-            params: qs.stringify(this.urlParameters)
+            params: qs.stringify(this.urlParameters),
         });        
         return (res.data as T);
     }
@@ -53,6 +53,14 @@ export default abstract class BaseService<T> {
             params: qs.stringify(this.urlParameters)
         });
         return (res.data as T[]);
+    }
+
+    async getFile(): Promise<T> {        
+        const res = await this.axiosInstance.get(this.url, {
+            params: qs.stringify(this.urlParameters),
+            responseType: 'blob'
+        });        
+        return (res.data as T);
     }
 
     async post(data: T): Promise<T> {

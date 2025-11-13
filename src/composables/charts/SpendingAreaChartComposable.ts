@@ -1,13 +1,9 @@
-import type CategoryMonthTotal from "@/data/interfaces/Statistics/CategoryMonthTotal";
 import { useAreaChart } from "../baseCharts/AreaChartComposable";
 import type { Ref } from "vue";
-import { aggregateCategoryMonthTotals } from "@/utilities/CategoryMonthAggregator";
-import CategoryTypeEnum from "@/data/enumerations/CategoryType";
-import CategoryReportingTypeEnum from "@/data/enumerations/CategoryReportingType";
 import MonthEnum from "@/data/enumerations/MonthEnum";
 import type YearCollectionModel from "@/data/classes/YearCollectionModel";
 
-export function useSpendingAreaChart(data: Ref<Map<number, YearCollectionModel>>) {
+export function useSpendingAreaChart(data: Ref<Map<string, YearCollectionModel>>) {
     
     const xAxisCategories = ref(MonthEnum.getItems().map(x => x.description.substring(0, 3)));
     
@@ -19,7 +15,7 @@ export function useSpendingAreaChart(data: Ref<Map<number, YearCollectionModel>>
 
         for (const [key, value] of map) {
             series.push({
-                name: key.toString(),
+                name: key,
                 data: getChartData(value.yearData)
             })
         }

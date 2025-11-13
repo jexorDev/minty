@@ -7,7 +7,7 @@ export enum DateFormats {
 }
 
 export function formatDate(value: string | Date | Dayjs, format: string = DateFormats.Default): string {
-    return dayjs(value).format("MM/DD/YYYY")
+    return dayjs(value).format(format)
 }
 
 export function createDate(year: number, month: number, date: number, format: string = DateFormats.Default): string {

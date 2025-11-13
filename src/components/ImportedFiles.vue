@@ -2,7 +2,7 @@
     <v-row>
         <v-col v-for="file in importedFiles" cols="12" md="4">
             <v-card 
-                :title="importedFileTypeEnum.getItemByValue(file.fileType)?.description"
+                :title="ImportFileTypeEnum.getItemByValue(file.fileType)?.description"
                 :subtitle="file.name">
                 <template v-slot:append>
                     <v-chip v-if="file.status === 1" label color="error" variant="elevated" class="text-overline mr-1">Deleted</v-chip>
@@ -46,7 +46,6 @@ import { formatDate, DateFormats } from '@/utilities/DateFormattingUtility';
 
 const confirmationStore = useConfirmationStore();
 const snackbarStore = useSnackbarStore();
-const importedFileTypeEnum = new ImportFileTypeEnum();
 const importedFiles = ref<ImportedFile[]>([]);
 
 onMounted(async () => {    

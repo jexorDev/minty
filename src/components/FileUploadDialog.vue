@@ -67,6 +67,7 @@ import MerchantService from '@/data/services/MerchantService';
 import AccountService from '@/data/services/AccountService';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import ImportFileTypeEnum from '@/data/enumerations/ImportFileType';
+import { useUserSettingsStore } from '@/stores/UserSettingsStore';
 
 interface FileTransaction {
     date: Date;
@@ -87,6 +88,7 @@ const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
 const snackbarStore = useSnackbarStore();
+const userSettingsStore = useUserSettingsStore();
 
 const loading = ref(false);
 const selectedFileUpload = ref<File|null>(null);
@@ -125,7 +127,8 @@ async function parseFile(): Promise<void> {
         await Promise.all([
           categoryStore.categories = await new CategoryService().getMultiple(),
           merchantStore.merchants = await new MerchantService().getMultiple(),
-          accountStore.accounts = await new AccountService().getMultiple()
+          accountStore.accounts = await new AccountService().getMultiple(),
+          await userSettingsStore.refreshUserSettings()
         ]);
         
         snackbarStore.setMessage("File successfully uploaded.", "success");

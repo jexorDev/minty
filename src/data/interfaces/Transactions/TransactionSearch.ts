@@ -7,7 +7,7 @@ export default interface TransactionSearch {
     categoryId: number | null;
     categoryName?: string;
     categoryType: number | null;
-    categoryReportingType: number | null;
+    categoryIgnore: boolean | null;
     subcategoryId: number | null;
     subcategoryName?: string;
     merchantId: number | null;

@@ -9,11 +9,11 @@
               <span class="text-overline">Expenses</span>
             </div>
             <v-progress-linear
-              color="primary"
+              :color="cashFlow === 0 ? '' : 'primary'"
               height="22"
               :model-value="cashFlowPercent"
               buffer-color="error"
-              buffer-opacity="1"
+              :buffer-opacity="cashFlow === 0 ? 0 : 1"
               :buffer-value="100"
               rounded="lg"
             >

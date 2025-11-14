@@ -27,7 +27,9 @@
                       </template>
                       
                     </v-list-item>
-                  <v-list-item v-for="category in filteredCategories" @click="selectedCategory = category">
+                  <v-list-item 
+                    v-for="category in filteredCategories" @click="selectedCategory = category"
+                    :class="category.ignore ? 'text-disabled' : ''">
                     <v-list-item-title>
                       {{ category.name }}
                     </v-list-item-title>
@@ -377,7 +379,6 @@ function removeCategoryRule(rule: string): void {
 function addNewCategory() {
   selectedCategory.value = {
     type: 0, 
-    reportingType: 0
   } as Category;
 }
 

@@ -29,21 +29,7 @@
             <v-list-item-subtitle>Category</v-list-item-subtitle>
             <v-autocomplete clearable v-model="filterCategoryId" :items="filteredCategories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
         </v-list-item>
-        <v-list-item>            
-            <v-list-item-subtitle>Reporting Type</v-list-item-subtitle>          
-            <v-radio-group
-                v-model="reportingType"
-                base-color="secondary"
-                color="primary"
-                divided
-                density="compact"
-            >
-            <v-radio v-for="enumItem in CategoryReportingTypeEnum.getItems()" :label="enumItem.description" :value="enumItem.value"></v-radio>          
-            </v-radio-group>
-            <v-list-item-action>
-            <v-btn @click="reportingType = null" density="compact" color="secondary" variant="text">Reset</v-btn>
-            </v-list-item-action>
-        </v-list-item>     
+      
         </v-list>
     </v-navigation-drawer>
     <v-toolbar color="secondary-darken-1" density="compact">
@@ -160,7 +146,6 @@ import { useSpendingByMonthHeatmapChart } from '@/composables/charts/SpendingByM
 import { useSpendingTreemapChart } from '@/composables/charts/SpendingTreemapChartComposable';
 import { useSpendingDonutChart } from '@/composables/charts/SpendingDonutChartComposable';
 import { useStackedSpendingBarChart } from '@/composables/charts/SpendingStackedBarChartComposable';
-import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
 import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 import ChartTypeEnum from '@/data/enumerations/ChartTypeEnum';
 import MonthEnum from '@/data/enumerations/MonthEnum';
@@ -178,7 +163,6 @@ const selectedYear = ref(getCurrentYear());
 const filterCategoryId = ref<number | null>(null);
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const showFilterDrawer = ref(true);
-const reportingType = ref<number | null>(null);
 const selectedViewType = ref<number>(StatisticsPageViewTypeEnum.Expenses.value);
 const selectedComparisonYear = ref<number | undefined>(undefined);
 const categoryStore = useCategoryStore();

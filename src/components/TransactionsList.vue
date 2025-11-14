@@ -4,12 +4,14 @@
             v-for="transaction in props.transactions" 
             :key="transaction.pk" 
             @click="emits('selectedTransactionChanged', transaction)"
-            :class="transaction.categoryReportingType === 0 ? '' : 'text-disabled'">
+            :class="transaction.categoryIgnore ? 'text-disabled' : ''">
             <template v-slot:prepend>
               <v-icon v-if="transaction.splitId" icon="mdi-source-fork"></v-icon>
             </template>
             <v-list-item-title>{{ transaction.description }}</v-list-item-title>
-            <v-list-item-subtitle>{{ transaction.categoryId === null ? "UNCATEGORIZED" : transaction.categoryName }}</v-list-item-subtitle>
+            <v-list-item-subtitle>
+              <v-icon v-if="transaction.categoryId === null" icon="mdi-alert" color="warning"></v-icon>
+              {{ transaction.categoryId === null ? "UNCATEGORIZED" : transaction.categoryName }}</v-list-item-subtitle>
             <v-list-item-subtitle class="font-italic mt-1">{{ transaction.notes }}</v-list-item-subtitle>
             <template v-slot:append>
               <v-list-item-action class="flex-column align-end">

@@ -11,20 +11,18 @@
             mandatory>
             <v-btn v-for="enumItem in CategoryTypeEnum.getItems()">{{ enumItem.description }}</v-btn>                          
         </v-btn-toggle>    
-        <div class="text-overline">Statistics</div>
-        <v-btn-toggle 
-            v-model="selectedCategory.reportingType" 
+        <v-switch
+            v-model="selectedCategory.ignore" 
+            label="Ignore"
             base-color="secondary"
             color="primary"
             density="compact"
-            mandatory>
-            <v-btn v-for="enumItem in CategoryReportingTypeEnum.getItems()">{{ enumItem.description }}</v-btn>
-        </v-btn-toggle>                   
+            class="ml-2 mt-5">            
+        </v-switch>                   
     </div>
 </template> 
 <script lang="ts" setup>
 import type Category from '@/data/interfaces/Category';
-import CategoryReportingTypeEnum from '@/data/enumerations/CategoryReportingType';
 import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 
 const selectedCategory = defineModel<Category>("category");

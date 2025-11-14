@@ -121,7 +121,12 @@
                 md="9">             
                 <v-card max-width="800">
                   <v-toolbar color="secondary-darken-1" density="compact" class="mb-2">
-                    <v-checkbox v-model="splitEqually" label="Split Equally" class="mt-5"></v-checkbox>
+                    <v-switch 
+                      v-model="splitEqually" 
+                      label="Split Equally" 
+                      color="primary"
+                      class="mt-5 ml-2"
+                      ></v-switch>
                     <v-spacer></v-spacer>                                        
                     <v-btn @click="addNew()" variant="elevated" color="primary" append-icon="mdi-source-fork">Add</v-btn>
                   </v-toolbar>
@@ -153,9 +158,9 @@
                 <v-card color="secondary-darken-1">
                   <v-card-text>
                     <div class="text-overline">Transaction Total</div>
-                    <div>${{ fetchedTransaction.amount }}</div>
+                    <div class="font-weight-medium">${{ fetchedTransaction.amount }}</div>
                     <div class="text-overline">Remaining Allocation</div>
-                    <div>${{ remainingSplitAllocation }} <v-icon v-if="remainingSplitAllocation !== fetchedTransaction.amount" :icon="remainingSplitAllocation === 0 ? 'mdi-check' : 'mdi-alert'" :color="remainingSplitAllocation === 0 ? 'success' : 'warning'"></v-icon></div>                      
+                    <div class="font-weight-medium">${{ remainingSplitAllocation }} <v-icon v-if="remainingSplitAllocation !== fetchedTransaction.amount" :icon="remainingSplitAllocation === 0 ? 'mdi-check' : 'mdi-alert'" :color="remainingSplitAllocation === 0 ? 'success' : 'warning'"></v-icon></div>                      
                   </v-card-text>
                 </v-card>
               </v-col>
@@ -280,7 +285,6 @@ function openAddDialog(type: "category" | "merchant" | "account") {
   if (type === "category") {
     newCategory.value = {
       type: 0,
-      reportingType: 0
     } as Category;
   } else if (type === "merchant") {
     newMerchant.value = {} as Merchant;
@@ -298,18 +302,14 @@ function closeAddDialog() {
   showAddDialog.value = false;
 }
 
-
 function addNew() {
-  // if (splits.value !== undefined) {
-  //   splits.value.add(new TransactionSplitModel({} as TransactionSplit));
 
-  // }
   var amount = 0;
   
   if (splitEqually.value) {
     const splitCount =  fetchedTransactionSplits.value.length + 1;
     var dividedAmount = Math.round(fetchedTransaction.value!.amount / splitCount * 100) / 100;
-    var roundingError = fetchedTransaction.value!.amount - (dividedAmount * splitCount);
+    var roundingError = Math.round((fetchedTransaction.value!.amount - (dividedAmount * splitCount)) * 100) / 100;
 
     amount = dividedAmount + roundingError;
 
@@ -322,7 +322,6 @@ function addNew() {
   }
 
   fetchedTransactionSplits.value.push({
-    pk: 0,
     categoryId: fetchedTransaction.value.categoryId,
     amount: Math.round(amount * 100 ) / 100
   } as TransactionSplit);
@@ -333,15 +332,14 @@ function deleteSplit(split: TransactionSplit) {
 
   if (splitEqually.value && fetchedTransactionSplits.value.length > 0) {
     const splitCount =  fetchedTransactionSplits.value.length;
-    var dividedAmount = fetchedTransaction.value!.amount / splitCount;
-    var roundingError = fetchedTransaction.value!.amount - (dividedAmount * splitCount);
-
-
-    
+    var dividedAmount = Math.round(fetchedTransaction.value!.amount / splitCount * 100) / 100;
+    var roundingError = Math.round((fetchedTransaction.value!.amount - (dividedAmount * splitCount)) * 100) / 100;
 
     for (const split of fetchedTransactionSplits.value) {
       split.amount = dividedAmount;
     }
+
+    fetchedTransactionSplits.value[0].amount += roundingError;
 
   } 
 }
@@ -349,6 +347,9 @@ function deleteSplit(split: TransactionSplit) {
 async function save() {
   if (fetchedTransactionSplits.value.length > 0 && remainingSplitAllocation.value !== 0) {
     snackbarStore.setMessage("Splits must total to original transaction total.", "error");
+    return;
+  } else if (fetchedTransactionSplits.value.filter(x => x.categoryId === null).length > 0) {
+    snackbarStore.setMessage("All splits must have a category set.", "error");
     return;
   }
 
@@ -381,8 +382,5 @@ const remainingSplitAllocation = computed(() => {
     return Math.round(((fetchedTransaction.value?.amount ?? 0)  - currentSplitAllocation.value) * 100) / 100;
   }
 })
-
-//const categories = ref<Category[]>([]);
-const valid = ref(true);
 
 </script>

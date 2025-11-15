@@ -1,6 +1,5 @@
 <template>
   <v-navigation-drawer
-    v-if="!quickFindMode"
     v-model="showFilterDrawer"    
     location="right">
     <v-list>
@@ -30,7 +29,7 @@
               density="compact"
               prepend-icon=""
               prepend-inner-icon="mdi-calendar"
-              ></v-date-input>
+        ></v-date-input>
         <v-btn 
           @click="setCustomDateRange(0)"
           size="x-small" 
@@ -95,9 +94,10 @@
         Export
       </v-btn>
       <v-divider vertical thickness="3"></v-divider>
-       <v-menu v-if="!quickFindMode">
+       <v-menu>
         <template v-slot:activator="{ props }">
           <v-btn
+            v-if="!$vuetify.display.mobile || !isQuickSearchFocused"
             color="primary"
             append-icon="mdi-plus"
             variant="text"
@@ -121,33 +121,35 @@
       </v-menu>
     </template>
 
-    <v-text-field 
-      v-if="quickFindMode" 
-      v-model="searchString" 
-      variant="outlined" 
-      density="compact" 
-      max-width="500" 
-      placeholder="Quick Search" 
-      @update:model-value="searchUpdate" 
-      clearable 
-      :loading="isLoading" 
-      class="mt-5">
-        <template v-slot:append>
-            <v-chip label >{{ resultCount }} results</v-chip>
+    <v-autocomplete 
+      v-model:search="searchString"
+      :loading="isQuickSearchLoading"
+      @update:search="searchUpdate"
+      @update:focused="quickSearchFocusChanged"
+      placeholder="Quick Search"
+      max-width="500"
+      density="compact"
+      variant="outlined"
+      class="mt-5"
+      item-value="pk"
+      item-title="description"
+      hide-no-data      
+      :items="quickSearchTransactions">
+      <template v-slot:item="{props, item}">
+        <TransactionsListItem 
+          :transaction="item.raw" 
+          @selected-transaction-changed="setTransactionToEdit">
+        </TransactionsListItem>
+      </template>
+         <template v-slot:append>
+            <v-chip v-if="!isQuickSearchLoading && searchString.length > 0" label >{{ resultCount }} results</v-chip>
+            <v-progress-circular v-if="isQuickSearchLoading" indeterminate></v-progress-circular>
         </template>
-    </v-text-field>
-      
-    <template v-slot:append>
+    </v-autocomplete>
+  
+    <template v-slot:append>      
       <v-btn 
-        @click="quickFindMode = !quickFindMode" 
-        :prepend-icon="quickFindMode ? 'mdi-magnify-remove-outline' : 'mdi-magnify'"                 
-        :text="quickFindMode ? '' : 'Quick Find'"
-        color="primary" 
-        class="ml-1" 
-        :variant="quickFindMode ? 'flat' : 'outlined'"  
-        ></v-btn>
-      <v-btn 
-        v-if="!quickFindMode" 
+        v-if="!$vuetify.display.mobile || !isQuickSearchFocused"
         text="Filter"
         @click="showFilterDrawer = !showFilterDrawer" 
         prepend-icon="mdi-filter-variant" 
@@ -161,10 +163,14 @@
       <div :class="$vuetify.display.mobile ? '' : 'scroll'">
         <v-empty-state v-if=isLoading>
           <v-progress-circular indeterminate size="x-large" color="secondary" :width="7"></v-progress-circular>
-        </v-empty-state> 
-        <TransactionsList @selected-transaction-changed="setTransactionToEdit" :transactions="filteredTransactions"></TransactionsList>
+        </v-empty-state>
+        <v-list>
+          <div v-for="transaction of filteredTransactions">
+            <TransactionsListItem :transaction="transaction" @selected-transaction-changed="setTransactionToEdit"></TransactionsListItem>
+          </div>
+        </v-list> 
         <v-empty-state
-            v-if="(!quickFindMode || searchString) && !isLoading && resultCount === 0"                            
+            v-if="!isLoading && filteredTransactions.length === 0"                            
             title="No results"
             text="Try a different search criteria"  
         ></v-empty-state>
@@ -201,6 +207,7 @@ import GenericService from '@/data/services/GenericService';
 
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
+  const quickSearchTransactions = ref<TransactionSearch[]>([]);
   const showAddTransactionDialog = ref(false);
   const selectedYear = ref(getCurrentYear());
   const showUploadDialog = ref(false);
@@ -209,11 +216,12 @@ import GenericService from '@/data/services/GenericService';
   const categoryStore = useCategoryStore();
   const filterCategoryId = ref<number | null>(null);
   const showFilterDrawer = ref(true);
-  const quickFindMode = ref(false);
   const includeIgnoredCategories = ref(true);
   const uncategorizedTransactionsOnly = ref(false);
   const searchString = ref("");
   const isLoading = ref(false);
+  const isQuickSearchLoading = ref(false);
+  const isQuickSearchFocused = ref(false);
   const customDateRange = ref(false);
   const customDateRangeFrom = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const customDateRangeTo = ref(formatDate(getCurrentDate(), DateFormats.ISO));
@@ -229,9 +237,7 @@ const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(transactio
     await getData();
   });
 
-  const filteredTransactions = computed(() => searchString.value 
-  ? transactions.value 
-  :  transactions.value
+  const filteredTransactions = computed(() => transactions.value
       .filter(x => filterCategoryId.value === null || x.categoryId === filterCategoryId.value)
       .filter(x => x.categoryIgnore === (includeIgnoredCategories.value ? x.categoryIgnore : false))
       .filter(x => x.categoryId === (uncategorizedTransactionsOnly.value ? null : x.categoryId)));
@@ -245,22 +251,13 @@ const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(transactio
       
       transactions.value = [];
 
-      if (searchString.value) {
-        transactions.value = await new TransactionSearchService()
-            .withUrlParameters({
-            searchString: searchString.value,
-            includeIgnored: true
-            }).getMultiple();        
-      } else {
-        transactions.value = await new TransactionSearchService()
-          .withUrlParameters({
-            fromDate: fromDate.value,
-            toDate: toDate.value,
-            includeIgnoredCategories: true,
-            uncategorizedTransactionsOnly: false
-          }).getMultiple();   
-
-      }
+      transactions.value = await new TransactionSearchService()
+        .withUrlParameters({
+          fromDate: fromDate.value,
+          toDate: toDate.value,
+          includeIgnoredCategories: true,
+          uncategorizedTransactionsOnly: false
+        }).getMultiple();   
     } finally {
       isLoading.value = false;
     }
@@ -281,22 +278,31 @@ async function exportData(): Promise<void> {
   URL.revokeObjectURL(link.href);
 }
 
-function searchUpdate(searchString: string): void {
+async function searchUpdate(searchString: string): Promise<void> {
   if (timerId) {
-      isLoading.value = true;
+      isQuickSearchLoading.value = true;
     clearTimeout(timerId);
   }
 
   if (!searchString) {
-      isLoading.value = false;
+      isQuickSearchLoading.value = false;
       return;
   }
 
   timerId = setTimeout(async () => {
-    await getData();
+    try {
+      quickSearchTransactions.value = await new TransactionSearchService()
+        .withUrlParameters({
+          searchString: searchString,
+          includeIgnored: true
+        }).getMultiple();        
+
+    } finally {
+      isQuickSearchLoading.value = false;
+    }
   }, 1000);       
 }
-const resultCount = computed(() => filteredTransactions.value.length);
+const resultCount = computed(() => quickSearchTransactions.value.length);
 
 const spendingByCategoryTableData = computed(() => {
   return aggregatedCategories.value.map(x => {return {name: x.name, total: formatNumber(x.total, NumberFormats.Price)}});
@@ -313,20 +319,17 @@ function setCustomDateRange(yearOffset: number): void {
   customDateRangeTo.value = createDate(currentYear, 11, 31, DateFormats.ISO);
 }
 
+function quickSearchFocusChanged(focused: boolean): void {
+  isQuickSearchFocused.value = focused;
+  quickSearchTransactions.value = [];
+}
+
 watch(selectedYear, async () => await getData());
 watch(selectedMonth, async () => await getData());
 watch(customDateRange, async () => await getData());
 watch(customDateRangeFrom, async () => await getData());
 watch(customDateRangeTo, async () => await getData());
 
-watch(quickFindMode, () => {
-  transactions.value = [];
-  if (!quickFindMode.value) {
-    searchString.value = "";
-    getData();
-  }
-})
-  
 </script>
 <style scoped>
 .scroll {

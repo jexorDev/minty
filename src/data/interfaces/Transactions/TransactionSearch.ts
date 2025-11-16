@@ -15,5 +15,6 @@ export default interface TransactionSearch {
     accountId: number | null;
     accountName?: string;
     notes: string;
+    tags: string[];
     modifiedDate?: Date | null;
 }

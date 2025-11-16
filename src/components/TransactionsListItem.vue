@@ -11,6 +11,11 @@
       <v-icon v-if="props.transaction.categoryId === null" icon="mdi-alert" color="warning"></v-icon>
       {{ props.transaction.categoryId === null ? "UNCATEGORIZED" : props.transaction.categoryName }}</v-list-item-subtitle>
     <v-list-item-subtitle class="font-italic mt-1">{{ props.transaction.notes }}</v-list-item-subtitle>
+
+    <div class="d-flex flex-wrap">
+      <v-chip density="compact" size="small" color="primary" class="mr-1" label v-for="tag of props.transaction.tags">{{ tag }}</v-chip>
+    </div>
+
     <template v-slot:append>
       <v-list-item-action class="flex-column align-end">
         <small>{{ formatDate(props.transaction.transactionDate) }}</small>

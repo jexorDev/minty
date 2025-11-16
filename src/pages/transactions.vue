@@ -76,7 +76,12 @@
           density="compact"
         ></v-switch>
       </v-list-item>
+      
       <v-divider thickness="3" class="mb-2"></v-divider>
+
+      <v-list-item subtitle="Tags">        
+        <v-autocomplete clearable v-model="filterTagText" :items="tags" item-title="text" item-value="text" variant="outlined" density="compact"></v-autocomplete>
+      </v-list-item>
       
     </v-list>
   </v-navigation-drawer>
@@ -186,7 +191,12 @@
     </v-col>
   </v-row>
   
-  <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="getData"></TransactionAddForm>
+  <TransactionAddForm 
+    v-model:show="showAddTransactionDialog" 
+    :transaction="selectedTransaction" 
+    :tags="tags"
+    @refresh="refresh"
+  ></TransactionAddForm>
   <FileUploadDialog v-model="showUploadDialog" @refresh="getData"></FileUploadDialog>
     
 </template>
@@ -204,6 +214,8 @@ import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility
 import { useUserSettingsStore } from '@/stores/UserSettingsStore';
 import { useCategoryAggregatorTransactionSearch } from '@/composables/data/CategoryAggregatorTransactionSearch';
 import GenericService from '@/data/services/GenericService';
+import type Tag from '@/data/interfaces/Tag';
+import TagService from '@/data/services/TagService';
 
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
@@ -215,6 +227,7 @@ import GenericService from '@/data/services/GenericService';
   const selectedMonth = ref(getMonth(userSettingsStore.userSettings.maxTransactionDate));
   const categoryStore = useCategoryStore();
   const filterCategoryId = ref<number | null>(null);
+  const filterTagText = ref<string | null>(null);
   const showFilterDrawer = ref(true);
   const includeIgnoredCategories = ref(true);
   const uncategorizedTransactionsOnly = ref(false);
@@ -225,6 +238,7 @@ import GenericService from '@/data/services/GenericService';
   const customDateRange = ref(false);
   const customDateRangeFrom = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const customDateRangeTo = ref(formatDate(getCurrentDate(), DateFormats.ISO));
+  const tags = ref<Tag[]>([]);
   const headers = [
     { title: 'Category', key: 'x' },
     { title: 'Total', key: 'y', value: (item: any) => formatNumber(item.y, NumberFormats.Price) }  
@@ -234,13 +248,17 @@ const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(transactio
   let timerId: number | null = null;
   
   onMounted(async () => {
-    await getData();
+    Promise.all([
+      await getData(),
+      tags.value = await new TagService().getMultiple()
+    ]);
   });
 
   const filteredTransactions = computed(() => transactions.value
       .filter(x => filterCategoryId.value === null || x.categoryId === filterCategoryId.value)
       .filter(x => x.categoryIgnore === (includeIgnoredCategories.value ? x.categoryIgnore : false))
-      .filter(x => x.categoryId === (uncategorizedTransactionsOnly.value ? null : x.categoryId)));
+      .filter(x => x.categoryId === (uncategorizedTransactionsOnly.value ? null : x.categoryId))
+      .filter(x => filterTagText.value ? x.tags.includes(filterTagText.value) : true));
   const fromDate = computed(() => customDateRange.value ? formatDate(customDateRangeFrom.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO));
   const toDate = computed(() => customDateRange.value ? formatDate(customDateRangeTo.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate.value), DateFormats.ISO));
 
@@ -262,6 +280,13 @@ const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(transactio
       isLoading.value = false;
     }
   }  
+
+  async function refresh(): Promise<void> {
+    Promise.all([
+      await getData(),
+      tags.value = await new TagService().getMultiple()
+    ])
+  }
 
 async function exportData(): Promise<void> {
   const file = await new GenericService("search").withRouteParameter("export")

@@ -19,6 +19,7 @@ declare module 'vue' {
     MerchantAddEditForm: typeof import('./components/MerchantAddEditForm.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    TagsContainer: typeof import('./components/TagsContainer.vue')['default']
     TransactionAddForm: typeof import('./components/TransactionAddForm.vue')['default']
     TransactionQuickFindDialog: typeof import('./components/TransactionQuickFindDialog.vue')['default']
     TransactionsListItem: typeof import('./components/TransactionsListItem.vue')['default']

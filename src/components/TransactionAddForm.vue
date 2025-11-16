@@ -59,6 +59,7 @@
                 required 
                 variant="outlined"             
                 prefix="$"
+                @focus="selectAllText"
               ></v-text-field>
               
             </v-col>
@@ -79,11 +80,20 @@
                 variant="outlined"
                 rows="4"
               ></v-textarea>
+              <div class="text-caption font-weight-light">Tags</div>
+              <TagsContainer v-model:selected-tags="fetchedTransaction.tags" :selectable-tags="selectableTags"></TagsContainer>
             </v-col>
             <v-col
               cols="12"
               md="6">
-              <v-autocomplete v-model="fetchedTransaction.categoryId" label="Category" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined">
+              <v-autocomplete 
+                v-model="fetchedTransaction.categoryId" 
+                label="Category" 
+                :items="categoryStore.categories" 
+                item-title="name" 
+                item-value="pk" 
+                variant="outlined"
+                clearable>
                 <template v-slot:append>
                   <v-tooltip text="Create new Category" location="top">
                     <template v-slot:activator="{ props }">                    
@@ -92,7 +102,13 @@
                   </v-tooltip>
                 </template>
               </v-autocomplete>
-              <v-autocomplete v-model="fetchedTransaction.merchantId" label="Merchant" :items="merchantStore.merchants" item-title="name" item-value="pk" variant="outlined">
+              <v-autocomplete 
+                v-model="fetchedTransaction.merchantId" 
+                label="Merchant" :items="merchantStore.merchants" 
+                item-title="name" 
+                item-value="pk" 
+                variant="outlined"
+                clearable>
                 <template v-slot:append>
                   <v-tooltip text="Create new Merchant" location="top">
                     <template v-slot:activator="{ props }">                    
@@ -101,7 +117,14 @@
                   </v-tooltip>
                 </template>
               </v-autocomplete>
-              <v-autocomplete v-model="fetchedTransaction.accountId" label="Account" :items="accountStore.accounts" item-title="name" item-value="pk" variant="outlined">
+              <v-autocomplete 
+                v-model="fetchedTransaction.accountId" 
+                label="Account" 
+                :items="accountStore.accounts" 
+                item-title="name" 
+                item-value="pk" 
+                variant="outlined"
+                clearable>
                 <template v-slot:append>
                   <v-tooltip text="Create new Account" location="top">
                     <template v-slot:activator="{ props }">                    
@@ -130,26 +153,52 @@
                     <v-spacer></v-spacer>                                        
                     <v-btn @click="addNew()" variant="elevated" color="primary" append-icon="mdi-source-fork">Add</v-btn>
                   </v-toolbar>
-                  <v-row v-for="split of fetchedTransactionSplits" no-gutters>
-                    <v-col cols="7">
-                      <v-autocomplete label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk" density="compact" clearable variant="outlined" class="mr-1">
-                        <template v-if="!split.categoryId" v-slot:prepend-inner>
-                           <v-tooltip  text="Create new Category" location="top">
-                            <template v-slot:activator="{ props }">                    
-                              <v-btn v-bind="props" @click="openAddDialog('category')" variant="elevated" color="primary" size="xsmall" icon="mdi-plus"></v-btn>
-                            </template>
-                          </v-tooltip>
-                        </template>                                                                        
-                      </v-autocomplete>
-                    </v-col>
-                    <v-col cols="5">
-                       <v-text-field v-model="split.amount" prefix="$" :append-inner-icon="$vuetify.display.mobile || remainingSplitAllocation <= 0 ? '' : 'mdi-arrow-collapse-up'" v-on:click:append-inner="allocateRemainingToSplit(split)" density="compact" variant="outlined">
-                        <template v-slot:append>
-                          <v-btn @click="deleteSplit(split)" color="secondary" icon="mdi-close" variant="text" size="xsmall"></v-btn>
-                        </template>
-                       </v-text-field>
-                    </v-col>                    
-                  </v-row> 
+                  <div v-for="split of fetchedTransactionSplits">
+                    <v-row no-gutters class="mt-2">
+                      <v-col cols="7">
+                        <v-autocomplete label="Category" v-model="split.categoryId" :items="categoryStore.categories" item-title="name" item-value="pk" density="compact" clearable variant="outlined" class="mr-1">
+                          <template v-if="!split.categoryId" v-slot:prepend-inner>
+                             <v-tooltip  text="Create new Category" location="top">
+                              <template v-slot:activator="{ props }">                    
+                                <v-btn v-bind="props" @click="openAddDialog('category')" variant="elevated" color="primary" size="xsmall" icon="mdi-plus"></v-btn>
+                              </template>
+                            </v-tooltip>
+                          </template>                                                                        
+                        </v-autocomplete>
+                      </v-col>
+                      <v-col cols="5">
+                         <v-text-field 
+                          v-model="split.amount" 
+                          prefix="$" 
+                          :append-inner-icon="$vuetify.display.mobile || remainingSplitAllocation <= 0 ? '' : 'mdi-arrow-collapse-up'" 
+                          v-on:click:append-inner="allocateRemainingToSplit(split)" 
+                          @focus="selectAllText"
+                          density="compact" 
+                          variant="outlined">
+                          <template v-slot:append>
+                            <v-btn @click="deleteSplit(split)" color="secondary" icon="mdi-close" variant="text" size="xsmall"></v-btn>
+                          </template>
+                         </v-text-field>
+                      </v-col>                    
+                    </v-row> 
+                    <v-row no-gutters>
+                      <v-col>
+                        <v-textarea 
+                          v-model="split.notes"
+                          label="Notes"
+                          density="compact"
+                          variant="outlined"
+                          rows="1">
+                        </v-textarea>
+                      </v-col>
+                    </v-row>
+                    <v-row no-gutters>
+                      <v-col>
+                        <TagsContainer v-model:selected-tags="split.tags" :selectable-tags="selectableTags"></TagsContainer>
+                      </v-col>
+                    </v-row>
+                    <v-divider thickness="3"></v-divider>
+                  </div>
                 </v-card>
               </v-col>
               <v-col 
@@ -204,12 +253,14 @@ import type Merchant from '@/data/interfaces/Merchant';
 import type Account from '@/data/interfaces/Account';
 import MerchantService from '@/data/services/MerchantService';
 import AccountService from '@/data/services/AccountService';
+import type Tag from '@/data/interfaces/Tag';
 
 const show = defineModel<boolean>("show")
 const tab = ref<"general" | "splits">("general");
 
 const props = defineProps<{
-  transaction?: TransactionSearch
+  transaction?: TransactionSearch,
+  tags?: Tag[]
 }>();
 
 const emit = defineEmits<{(e: "refresh"): void}>();
@@ -229,13 +280,12 @@ const newCategory = ref<Category | undefined>(undefined);
 const newMerchant = ref<Merchant | undefined>(undefined);
 const newAccount = ref<Account | undefined>(undefined);
 
+const selectableTags = computed(() => props.tags ? props.tags.map(x => x.text) : []);
+
 watch(show, async (newValue) => {
   if (!newValue) return;  
 
   tab.value = "general";
-  fetchedTransaction.value = {
-    amount: 0
-  } as TransactionSearch;
   fetchedTransactionSplits.value = [];
 
   if (props.transaction) {
@@ -323,7 +373,9 @@ function addNew() {
 
   fetchedTransactionSplits.value.push({
     categoryId: fetchedTransaction.value.categoryId,
-    amount: Math.round(amount * 100 ) / 100
+    amount: Math.round(amount * 100 ) / 100,
+    tags: [],
+    notes: ""
   } as TransactionSplit);
 }
 
@@ -369,6 +421,10 @@ async function save() {
 
 function allocateRemainingToSplit(split: TransactionSplit) {
   split.amount += remainingSplitAllocation.value;
+}
+
+function selectAllText(event: any) {
+    event.target.select();
 }
 
 const currentSplitAllocation = computed(() => {

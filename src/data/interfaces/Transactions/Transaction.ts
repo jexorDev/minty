@@ -8,5 +8,6 @@ export default interface Transaction {
     merchantId: number | null;
     accountId: number | null;
     notes: string;
+    tags: string[];
     modifiedDate?: Date | null;
 }

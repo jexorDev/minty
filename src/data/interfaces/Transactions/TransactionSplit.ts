@@ -1,7 +1,8 @@
 export default interface TransactionSplit {
     pk?: number;
-    transactionId: number;
-    categoryId: number;
+    transactionId?: number;
+    categoryId?: number;
     amount: number;
-    exclude: boolean;
+    notes: string;
+    tags: string[];
 }

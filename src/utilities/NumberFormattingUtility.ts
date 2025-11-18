@@ -9,3 +9,7 @@ export enum NumberFormats {
 export function formatNumber(value: number | string, format: string = NumberFormats.Default): string {
     return numeral(value).format(format);
 }
+
+export function castToNumber(value: string): number {
+    return numeral(value).value() ?? 0;
+}

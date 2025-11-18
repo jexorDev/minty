@@ -61,7 +61,7 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col>
+      <v-col cols="12" md="5">
         <v-card
           title="Spending Over Time Comparison"
           subtitle="This year vs last year">
@@ -71,7 +71,7 @@
         </v-card>
         
       </v-col>
-      <v-col>
+      <v-col cols="12" md="3">
         <v-card 
           title="Spending by Category"
           subtitle="For this year">
@@ -88,12 +88,24 @@
           <v-card-text>
             <apexchart v-if="selectedSpendingByCategoryChartType === 1" :options="spendingTreemapChartOptions" :series="spendingTreemapChartSeries"></apexchart>
             <apexchart v-else :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
-
+            <DataTable :data="spendingByCategoryTableData" :headers="[]"></DataTable>                    
           </v-card-text>
-
         </v-card>
-        
       </v-col>      
+      <v-col cols="12" md="2">
+        <v-card color="secondary-darken-1">
+          <v-card-title>
+            Uncategorized Transactions
+          </v-card-title>
+          <v-card-text>
+            <div class="text-h1 d-flex justify-center">{{ uncategorizedTransactions.length }}</div>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn block text="View" variant="tonal" color="primary" @click="routeToUncategorizedTransactions"></v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+      <v-col cols="12" md="2"></v-col>
     </v-row>
   </v-container> 
 </template>
@@ -108,11 +120,16 @@ import { aggregateCategoryMonthTotals } from '@/utilities/CategoryMonthAggregato
 import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 import { getCurrentYear } from '@/utilities/DateArithmeticUtility';
 import { useYearMonthMapAggregator, type YearMonthAggregatorFilter } from '@/composables/data/YearMonthMapAggregatorComposable';
-import { type CategoryAggregatorFilter, useCategoryAggregator } from '@/composables/data/CategoryAggregator';
+import { type AggregatedCategory, type CategoryAggregatorFilter, useCategoryAggregator } from '@/composables/data/CategoryAggregator';
+import router from '@/router';
+import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
+import TransactionSearchService from '@/data/services/TransactionSearchService';
+import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
 
 const selectedCurrentYear = ref(getCurrentYear());
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const selectedSpendingByCategoryChartType = ref(0);
+const uncategorizedTransactions = ref<TransactionSearch[]>([]);
 
 const yearMonthMapFilter = computed<YearMonthAggregatorFilter>(() => {
    return {    
@@ -131,16 +148,39 @@ const totalExpensesPreviousYear = computed(() => aggregateCategoryMonthTotals(ca
 const totalIncomeCurrentYear = computed(() => aggregateCategoryMonthTotals(categoryMonthTotals.value, undefined, selectedCurrentYear.value, undefined, CategoryTypeEnum.Income.value ));
 const totalIncomePreviousYear = computed(() => aggregateCategoryMonthTotals(categoryMonthTotals.value, undefined, selectedCurrentYear.value - 1, undefined, CategoryTypeEnum.Income.value ));
 
-const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(aggregatedCategories, true);
+const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingDonutChart(aggregatedCategories, categoryClicked, false);
 const {options: spendingAreaChartOptions, series: spendingAreaChartSeries} = useSpendingAreaChart(map);
-const {options: spendingTreemapChartOptions, series: spendingTreemapChartSeries} = useSpendingTreemapChart(aggregatedCategories);
+const {options: spendingTreemapChartOptions, series: spendingTreemapChartSeries} = useSpendingTreemapChart(aggregatedCategories, categoryClicked);
 
 onMounted(async () => {
-  categoryMonthTotals.value = await new StatisticsService().withUrlParameters({
-    "fromDate": `01/01/${selectedCurrentYear.value - 1}`,
-    "toDate": `12/31/${selectedCurrentYear.value}`,
-    "includeIgnored": false
-  }).getMultiple();
+  Promise.all([
+    categoryMonthTotals.value = await new StatisticsService().withUrlParameters({
+      fromDate: createDate(selectedCurrentYear.value - 1, 0, 1, DateFormats.ISO),
+      toDate: createDate(selectedCurrentYear.value, 11, 31, DateFormats.ISO), 
+      includeIgnored: false
+    }).getMultiple(),
+    uncategorizedTransactions.value = await new TransactionSearchService().withUrlParameters({
+      uncategorizedTransactionsOnly: true,
+      includeIgnoredCategories: true
+    }).getMultiple()
+
+  ]);
 })
+
+const spendingByCategoryTableData = computed(() => {
+    return aggregatedCategories.value.map(x => {return {name: x.name, total: formatNumber(x.total, NumberFormats.Price)}});
+});
+
+function routeToUncategorizedTransactions() {
+  router.push({path: "/transactions", query: {uncategorized: 'true'}})
+}
+
+function categoryClicked(category: AggregatedCategory) {
+    router.push({path: "/transactions", query: {
+        categoryId: category.id,
+        fromDate: createDate(selectedCurrentYear.value, 0, 1, DateFormats.ISO),
+        toDate: createDate(selectedCurrentYear.value, 11, 31, DateFormats.ISO), 
+    }});
+}
 
 </script>

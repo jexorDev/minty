@@ -169,11 +169,14 @@
         <v-empty-state v-if=isLoading>
           <v-progress-circular indeterminate size="x-large" color="secondary" :width="7"></v-progress-circular>
         </v-empty-state>
-        <v-list>
-          <div v-for="transaction of filteredTransactions">
-            <TransactionsListItem :transaction="transaction" @selected-transaction-changed="setTransactionToEdit"></TransactionsListItem>
-          </div>
-        </v-list> 
+        <v-virtual-scroll
+          :items="filteredTransactions"
+          style="height: 93vh"
+        >
+          <template v-slot:default="{ item }">
+            <TransactionsListItem :transaction="item" @selected-transaction-changed="setTransactionToEdit"></TransactionsListItem>
+          </template>
+        </v-virtual-scroll>
         <v-empty-state
             v-if="!isLoading && filteredTransactions.length === 0"                            
             title="No results"
@@ -186,7 +189,7 @@
         <apexchart :options="spendingDonutChartOptions" :series="spendingDonutChartSeries"></apexchart>
       </v-card>
       <v-card>        
-        <DataTable :data="spendingByCategoryTableData" :headers="headers" density="compact"></DataTable>
+        <DataTable :data="spendingByCategoryTableData" :headers="[]" density="compact"></DataTable>
       </v-card>
     </v-col>
   </v-row>
@@ -210,12 +213,13 @@ import { createDate, DateFormats, formatDate } from '@/utilities/DateFormattingU
 import MonthEnum from '@/data/enumerations/MonthEnum';
 import FileUploadDialog from '@/components/FileUploadDialog.vue';
 import { useSpendingFromTransactionsDonutChart } from '@/composables/charts/SpendingFromTransactionsDonutChartComposable';
-import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
+import { castToNumber, formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 import { useUserSettingsStore } from '@/stores/UserSettingsStore';
 import { useCategoryAggregatorTransactionSearch } from '@/composables/data/CategoryAggregatorTransactionSearch';
 import GenericService from '@/data/services/GenericService';
 import type Tag from '@/data/interfaces/Tag';
 import TagService from '@/data/services/TagService';
+import router from '@/router';
 
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
@@ -239,29 +243,38 @@ import TagService from '@/data/services/TagService';
   const customDateRangeFrom = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const customDateRangeTo = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const tags = ref<Tag[]>([]);
-  const headers = [
-    { title: 'Category', key: 'x' },
-    { title: 'Total', key: 'y', value: (item: any) => formatNumber(item.y, NumberFormats.Price) }  
-  ];
-const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(transactions, filterCategoryId)
-  const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingFromTransactionsDonutChart(aggregatedCategories);
+  
   let timerId: number | null = null;
   
   onMounted(async () => {
-    Promise.all([
-      await getData(),
-      tags.value = await new TagService().getMultiple()
-    ]);
+    if (router.currentRoute.value.query.categoryId) {
+      filterCategoryId.value = castToNumber(router.currentRoute.value.query.categoryId.toString());
+    }
+
+    if (router.currentRoute.value.query.fromDate &&
+        router.currentRoute.value.query.toDate) {
+      customDateRangeFrom.value = formatDate(router.currentRoute.value.query.fromDate.toString(), DateFormats.ISO);
+      customDateRangeTo.value = formatDate(router.currentRoute.value.query.toDate.toString(), DateFormats.ISO);
+      customDateRange.value = true;
+    }
+
+    if (router.currentRoute.value.query.uncategorized) {      
+      uncategorizedTransactionsOnly.value = true;      
+    } else {
+        await getData();
+    }
+    
+    tags.value = await new TagService().getMultiple();
   });
 
   const filteredTransactions = computed(() => transactions.value
       .filter(x => filterCategoryId.value === null || x.categoryId === filterCategoryId.value)
       .filter(x => x.categoryIgnore === (includeIgnoredCategories.value ? x.categoryIgnore : false))
-      .filter(x => x.categoryId === (uncategorizedTransactionsOnly.value ? null : x.categoryId))
       .filter(x => filterTagText.value ? x.tags.includes(filterTagText.value) : true));
   const fromDate = computed(() => customDateRange.value ? formatDate(customDateRangeFrom.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO));
   const toDate = computed(() => customDateRange.value ? formatDate(customDateRangeTo.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate.value), DateFormats.ISO));
-
+  const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(filteredTransactions, filterCategoryId)
+  const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingFromTransactionsDonutChart(aggregatedCategories);
   async function getData(): Promise<void> {
 
     try {
@@ -271,10 +284,10 @@ const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(transactio
 
       transactions.value = await new TransactionSearchService()
         .withUrlParameters({
-          fromDate: fromDate.value,
-          toDate: toDate.value,
+          fromDate: uncategorizedTransactionsOnly.value ? null : fromDate.value,
+          toDate: uncategorizedTransactionsOnly.value ? null : toDate.value,
           includeIgnoredCategories: true,
-          uncategorizedTransactionsOnly: false
+          uncategorizedTransactionsOnly: uncategorizedTransactionsOnly.value
         }).getMultiple();   
     } finally {
       isLoading.value = false;
@@ -354,7 +367,7 @@ watch(selectedMonth, async () => await getData());
 watch(customDateRange, async () => await getData());
 watch(customDateRangeFrom, async () => await getData());
 watch(customDateRangeTo, async () => await getData());
-
+watch(uncategorizedTransactionsOnly, async () => await getData());
 </script>
 <style scoped>
 .scroll {

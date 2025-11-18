@@ -2,6 +2,7 @@ import type {Ref} from 'vue';
 import { useBarChart } from "../baseCharts/BarChartComposable";
 import MonthEnum from "@/data/enumerations/MonthEnum";
 import YearCollectionModel from "@/data/classes/YearCollectionModel";
+import { castToNumber } from '@/utilities/NumberFormattingUtility';
 
 interface Series {
     name: string;
@@ -9,9 +10,9 @@ interface Series {
     data: number[] 
 }
 
-export function useStackedSpendingBarChart(data: Ref<Map<string, YearCollectionModel>>, isNetSpendingChart: Ref<boolean>) {
+export function useStackedSpendingBarChart(data: Ref<Map<string, YearCollectionModel>>, isNetSpendingChart: Ref<boolean>, monthClicked: Function) {
     
-    const {options} = useBarChart(MonthEnum.getItems().map(x => x.description), isNetSpendingChart);
+    const {options} = useBarChart(MonthEnum.getItems().map(x => x.description), isNetSpendingChart, segmentClicked);
     
     const series = computed<Series[]>(() => {
         const series: Series[] = [];
@@ -41,6 +42,10 @@ export function useStackedSpendingBarChart(data: Ref<Map<string, YearCollectionM
 
         return series;
     });
+
+    function segmentClicked(seriesIndex: number, dataPointIndex: number) {
+        monthClicked(castToNumber(series.value[seriesIndex].name), dataPointIndex);
+    }
 
     return {options, series};
 

@@ -153,11 +153,13 @@ import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthT
 import StatisticsService from '@/data/services/StatisticsService';
 import { useCategoryStore } from '@/stores/CategoryStore';
 import { useUserSettingsStore } from '@/stores/UserSettingsStore';
-import { getCurrentYear } from '@/utilities/DateArithmeticUtility';
+import { getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
-import { useCategoryAggregator, type CategoryAggregatorFilter } from '@/composables/data/CategoryAggregator';
+import { useCategoryAggregator, type AggregatedCategory, type CategoryAggregatorFilter } from '@/composables/data/CategoryAggregator';
 import StatisticsPageViewTypeEnum from '@/data/enumerations/StatisticsPageViewType';
 import YearCollectionModel from '@/data/classes/YearCollectionModel';
+import router from "@/router";
+import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
 
 const selectedYear = ref(getCurrentYear());
 const filterCategoryId = ref<number | null>(null);
@@ -201,13 +203,13 @@ onMounted(async () => {
     await getData();
 });
 
-async function getData() {    
-    const fromDate = `${selectedYear.value - (selectedComparisonYear.value ?? 0)}-01-01`;
-    const toDate = `${selectedYear.value}-12-31`;   
+const fromDate = computed(() => `${selectedYear.value - (selectedComparisonYear.value ?? 0)}-01-01`)
+const toDate = computed(() => `${selectedYear.value}-12-31`)
 
+async function getData() {    
     categoryMonthTotals.value = await new StatisticsService().withUrlParameters({
-        "fromDate": fromDate,
-        "toDate": toDate,
+        "fromDate": fromDate.value,
+        "toDate": toDate.value,
         "includeIgnored": false
     }).getMultiple();
 }
@@ -266,9 +268,28 @@ const filteredCategories = computed(() => selectedViewType.value === StatisticsP
                                             : categoryStore.categories.filter(x => x.type === CategoryTypeEnum.Income.value));
 const isNetIncomeChart = computed(() => selectedViewType.value === StatisticsPageViewTypeEnum.NetIncome.value);
 const {options: spendingHeatMapChartOptions, series: spendingHeatMapChartSeries} = useSpendingByMonthHeatmapChart(expensesMap);
-const {options: spendingStackedBarChartOptions, series: spendingStackedBarChartSeries} = useStackedSpendingBarChart(currentMap, isNetIncomeChart);
-const {options: sependingDonutChartOptions, series: spendingDonutChartSeries } = useSpendingDonutChart(aggregatedCategories);
-const {options: spendingTreemapChartOptions, series: spendingTreemapChartSeries} = useSpendingTreemapChart(aggregatedCategories);
+const {options: spendingStackedBarChartOptions, series: spendingStackedBarChartSeries} = useStackedSpendingBarChart(currentMap, isNetIncomeChart, monthClicked);
+const {options: sependingDonutChartOptions, series: spendingDonutChartSeries } = useSpendingDonutChart(aggregatedCategories, categoryClicked);
+const {options: spendingTreemapChartOptions, series: spendingTreemapChartSeries} = useSpendingTreemapChart(aggregatedCategories, categoryClicked);
+
+function categoryClicked(category: AggregatedCategory) {
+    router.push({path: "/transactions", query: {
+        categoryId: category.id,
+        fromDate: fromDate.value,
+        toDate: toDate.value
+    }});
+}
+
+function monthClicked(year: number, month: number) {
+    const fromDate = createDate(year, month, 1, DateFormats.ISO);
+    const toDate = createDate(year, month, getDaysInMonth(fromDate), DateFormats.ISO);
+
+    router.push({path: "/transactions", query: {
+        categoryId: filterCategoryId.value ?? "",
+        fromDate: fromDate,
+        toDate: toDate,
+    }})
+}
 
 const spendingTotalByYearHeaders = computed(() => {
     const headerArray: any[] = [];

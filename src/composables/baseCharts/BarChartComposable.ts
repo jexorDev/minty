@@ -1,7 +1,7 @@
 import { formatNumber } from "@/utilities/NumberFormattingUtility";
 import {type Ref} from "vue";
 
-export function useBarChart(labels: string[], isLineChart: Ref<boolean>) {
+export function useBarChart(labels: string[], isLineChart: Ref<boolean>, segmentClicked: Function) {
 
     const options = computed(() =>{
         return {
@@ -11,7 +11,13 @@ export function useBarChart(labels: string[], isLineChart: Ref<boolean>) {
                 toolbar: {
                     show: false
                 },
-                background: '00'              
+                background: '00' ,
+                events: {
+                    dataPointSelection: function(event: any, chartContext: any, opts: any) {
+                        console.log(opts)
+                        segmentClicked(opts.seriesIndex, opts.dataPointIndex)
+                    }
+                }             
             },
             dataLabels: {
                 enabled: false

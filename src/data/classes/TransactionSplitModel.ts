@@ -19,12 +19,4 @@ export default class TransactionSplitModel extends BaseModel<TransactionSplit> {
     set categoryId(value) {
         this.model.categoryId = value;
     }
-
-    get subcategoryId() {
-        return this.model.subcategoryId;
-    }
-    set subcategoryId(value) {
-        this.model.subcategoryId = value;
-    }
-
 }

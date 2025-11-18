@@ -1,11 +1,16 @@
 import { formatNumber, NumberFormats } from "@/utilities/NumberFormattingUtility";
 
-export function useDonutChart(showLegend: boolean) {
+export function useDonutChart(showLegend: boolean, segmentClicked: Function) {
 
     const options = ref({
       chart: {
         type: 'donut',
-        background: '00'
+        background: '00',
+        events: {
+          dataPointSelection: function(event: any, chartContext: any, opts: any) {
+            segmentClicked(opts.dataPointIndex)
+          }
+        }
       },
       stroke: {
         width: 0

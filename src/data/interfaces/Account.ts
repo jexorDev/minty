@@ -1,4 +1,4 @@
 export default interface Account {
-    pk: number;
+    pk: number | null;
     name: string;
 }

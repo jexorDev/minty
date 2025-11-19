@@ -23,6 +23,7 @@
             max-width="250" 
             min-width="200"
             append-inner-icon="mdi-plus"
+            hide-no-data
             @click:append-inner="addNewTag">                            
         </v-autocomplete>
     </div>

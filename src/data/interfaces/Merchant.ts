@@ -1,4 +1,4 @@
 export default interface Merchant {
-    pk: number;
+    pk: number | null;
     name: string;
 }

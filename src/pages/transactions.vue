@@ -8,12 +8,13 @@
           <v-icon icon="mdi-close" @click="showFilterDrawer = false"></v-icon>
         </template>
       </v-list-item>
-      <v-list-item subtitle="Custom Date Range">
-        <template v-slot:append>
-          <v-switch v-model="customDateRange" density="compact" color="primary" class="mt-5"></v-switch>
-        </template>
-      </v-list-item>
-      <v-list-item subtitle="From" v-if="customDateRange">
+      <v-list-item subtitle="Dates">
+        <v-radio-group v-model="dateFilterType" density="compact">
+          <v-radio v-for="item in TransactionDateFilterTypeEnum.getItems()" :value="item.value" :label="item.description"></v-radio>
+        </v-radio-group>
+        
+      </v-list-item>     
+      <v-list-item subtitle="From" v-if="dateFilterType === TransactionDateFilterTypeEnum.CustomRange.value">
         <v-date-input 
               v-model="customDateRangeFrom"
               variant="outlined"
@@ -22,7 +23,7 @@
               prepend-inner-icon="mdi-calendar"
               ></v-date-input>
       </v-list-item>
-      <v-list-item subtitle="To" v-if="customDateRange">
+      <v-list-item subtitle="To" v-if="dateFilterType ===  TransactionDateFilterTypeEnum.CustomRange.value">
         <v-date-input 
               v-model="customDateRangeTo"
               variant="outlined"
@@ -46,10 +47,10 @@
           class="ml-2">
         </v-btn>
       </v-list-item>      
-      <v-list-item subtitle="Year" v-if="!customDateRange">
+      <v-list-item subtitle="Year" v-if="dateFilterType === TransactionDateFilterTypeEnum.ByMonth.value">
         <v-select :items="userSettingsStore.yearsOfData" v-model="selectedYear" variant="outlined" density="compact"></v-select>
       </v-list-item>
-      <v-list-item subtitle="Month" v-if="!customDateRange">        
+      <v-list-item subtitle="Month" v-if="dateFilterType === TransactionDateFilterTypeEnum.ByMonth.value">        
         <v-chip-group 
           v-model="selectedMonth" 
           color="primary"  
@@ -60,10 +61,21 @@
       </v-list-item>
       <v-divider thickness="3" class="mb-2"></v-divider>
       <v-list-item subtitle="Category">        
-        <v-autocomplete clearable v-model="filterCategoryId" :items="categoryStore.categories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
+        <v-autocomplete 
+          v-model="filterCategoryId" 
+          clearable 
+          :items="categoryStore.categories" 
+          :disabled="uncategorizedTransactionsOnly"
+          item-title="name" 
+          item-value="pk" 
+          variant="outlined" 
+          density="compact">
+        </v-autocomplete>
       </v-list-item>
       <v-list-item subtitle="Include Ignored Categories">
-        <v-switch v-model="includeIgnoredCategories"
+        <v-switch 
+          v-model="includeIgnoredCategories"
+          :disabled="uncategorizedTransactionsOnly"
           color="primary"
           class="ml-2"
           density="compact"
@@ -76,14 +88,43 @@
           density="compact"
         ></v-switch>
       </v-list-item>
-      
       <v-divider thickness="3" class="mb-2"></v-divider>
 
+      <v-list-item subtitle="Merchant">        
+        <v-autocomplete 
+          v-model="filterMerchantId" 
+          clearable 
+          :items="merchantStore.merchants" 
+          item-title="name" 
+          item-value="pk" 
+          variant="outlined" 
+          density="compact">
+        </v-autocomplete>
+      </v-list-item>
+      <v-divider thickness="3" class="mb-2"></v-divider>
+
+      <v-list-item subtitle="Account">        
+        <v-autocomplete 
+          v-model="filterAccountId" 
+          clearable 
+          :items="accountStore.accounts" 
+          item-title="name" 
+          item-value="pk" 
+          variant="outlined" 
+          density="compact">
+        </v-autocomplete>
+      </v-list-item>      
+      <v-divider thickness="3" class="mb-2"></v-divider>
       <v-list-item subtitle="Tags">        
         <v-autocomplete clearable v-model="filterTagText" :items="tags" item-title="text" item-value="text" variant="outlined" density="compact"></v-autocomplete>
       </v-list-item>
       
     </v-list>
+    <template v-slot:append>
+      <div class="pa-2">
+        <v-btn @click="getData" block color="secondary-darken-1">Refresh</v-btn>
+      </div>
+    </template>
   </v-navigation-drawer>
         
   <v-toolbar color="secondary-darken-1" density="compact">    
@@ -220,6 +261,9 @@ import GenericService from '@/data/services/GenericService';
 import type Tag from '@/data/interfaces/Tag';
 import TagService from '@/data/services/TagService';
 import router from '@/router';
+import { useMerchantStore } from '@/stores/MerchantStore';
+import { useAccountStore } from '@/stores/AccountStore';
+import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFilterType';
 
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
@@ -230,7 +274,11 @@ import router from '@/router';
   const userSettingsStore = useUserSettingsStore();
   const selectedMonth = ref(getMonth(userSettingsStore.userSettings.maxTransactionDate));
   const categoryStore = useCategoryStore();
+  const merchantStore = useMerchantStore();
+  const accountStore = useAccountStore();
   const filterCategoryId = ref<number | null>(null);
+  const filterMerchantId = ref<number | null>(null);
+  const filterAccountId = ref<number | null>(null);
   const filterTagText = ref<string | null>(null);
   const showFilterDrawer = ref(true);
   const includeIgnoredCategories = ref(true);
@@ -239,7 +287,7 @@ import router from '@/router';
   const isLoading = ref(false);
   const isQuickSearchLoading = ref(false);
   const isQuickSearchFocused = ref(false);
-  const customDateRange = ref(false);
+  const dateFilterType = ref(TransactionDateFilterTypeEnum.ByMonth.value);
   const customDateRangeFrom = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const customDateRangeTo = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const tags = ref<Tag[]>([]);
@@ -251,30 +299,43 @@ import router from '@/router';
       filterCategoryId.value = castToNumber(router.currentRoute.value.query.categoryId.toString());
     }
 
+    if (router.currentRoute.value.query.merchantId) {
+      filterMerchantId.value = castToNumber(router.currentRoute.value.query.merchantId.toString());
+    }
+
+    if (router.currentRoute.value.query.accountId) {
+      filterAccountId.value = castToNumber(router.currentRoute.value.query.accountId.toString());
+    }
+
+    if (router.currentRoute.value.query.allDates) {
+      dateFilterType.value = TransactionDateFilterTypeEnum.AllDates.value;
+    }
+
     if (router.currentRoute.value.query.fromDate &&
         router.currentRoute.value.query.toDate) {
       customDateRangeFrom.value = formatDate(router.currentRoute.value.query.fromDate.toString(), DateFormats.ISO);
       customDateRangeTo.value = formatDate(router.currentRoute.value.query.toDate.toString(), DateFormats.ISO);
-      customDateRange.value = true;
+      dateFilterType.value = TransactionDateFilterTypeEnum.CustomRange.value;
     }
 
     if (router.currentRoute.value.query.uncategorized) {      
       uncategorizedTransactionsOnly.value = true;      
-    } else {
-        await getData();
     }
+
+    Promise.all([
+      await getData(),
+      tags.value = await new TagService().getMultiple()
+    ]);
     
-    tags.value = await new TagService().getMultiple();
   });
 
   const filteredTransactions = computed(() => transactions.value
-      .filter(x => filterCategoryId.value === null || x.categoryId === filterCategoryId.value)
-      .filter(x => x.categoryIgnore === (includeIgnoredCategories.value ? x.categoryIgnore : false))
       .filter(x => filterTagText.value ? x.tags.includes(filterTagText.value) : true));
-  const fromDate = computed(() => customDateRange.value ? formatDate(customDateRangeFrom.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO));
-  const toDate = computed(() => customDateRange.value ? formatDate(customDateRangeTo.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate.value), DateFormats.ISO));
+  const fromDate = computed(() => dateFilterType.value === TransactionDateFilterTypeEnum.CustomRange.value ? formatDate(customDateRangeFrom.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, 1, DateFormats.ISO));
+  const toDate = computed(() => dateFilterType.value === TransactionDateFilterTypeEnum.CustomRange.value ? formatDate(customDateRangeTo.value, DateFormats.ISO) : createDate(selectedYear.value, selectedMonth.value, getDaysInMonth(fromDate.value), DateFormats.ISO));
   const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(filteredTransactions, filterCategoryId)
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingFromTransactionsDonutChart(aggregatedCategories);
+  
   async function getData(): Promise<void> {
 
     try {
@@ -284,9 +345,12 @@ import router from '@/router';
 
       transactions.value = await new TransactionSearchService()
         .withUrlParameters({
-          fromDate: uncategorizedTransactionsOnly.value ? null : fromDate.value,
-          toDate: uncategorizedTransactionsOnly.value ? null : toDate.value,
-          includeIgnoredCategories: true,
+          fromDate: dateFilterType.value === TransactionDateFilterTypeEnum.AllDates.value ? null : fromDate.value,
+          toDate: dateFilterType.value === TransactionDateFilterTypeEnum.AllDates.value ? null : toDate.value,
+          includeIgnoredCategories: includeIgnoredCategories.value,
+          categoryId: filterCategoryId.value,
+          merchantId: filterMerchantId.value,
+          accountId: filterAccountId.value,
           uncategorizedTransactionsOnly: uncategorizedTransactionsOnly.value
         }).getMultiple();   
     } finally {
@@ -294,12 +358,12 @@ import router from '@/router';
     }
   }  
 
-  async function refresh(): Promise<void> {
-    Promise.all([
-      await getData(),
-      tags.value = await new TagService().getMultiple()
-    ])
-  }
+async function refresh(): Promise<void> {
+  Promise.all([
+    await getData(),
+    tags.value = await new TagService().getMultiple()
+  ])
+}
 
 async function exportData(): Promise<void> {
   const file = await new GenericService("search").withRouteParameter("export")
@@ -362,12 +426,6 @@ function quickSearchFocusChanged(focused: boolean): void {
   quickSearchTransactions.value = [];
 }
 
-watch(selectedYear, async () => await getData());
-watch(selectedMonth, async () => await getData());
-watch(customDateRange, async () => await getData());
-watch(customDateRangeFrom, async () => await getData());
-watch(customDateRangeTo, async () => await getData());
-watch(uncategorizedTransactionsOnly, async () => await getData());
 </script>
 <style scoped>
 .scroll {

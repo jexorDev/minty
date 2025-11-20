@@ -1,5 +1,4 @@
 <template>
-    
      <div class="d-flex flex-wrap">
         <v-chip 
             v-for="tag in selectedTags"
@@ -27,7 +26,6 @@
             @click:append-inner="addNewTag">                            
         </v-autocomplete>
     </div>
-   
 </template> 
 <script lang="ts" setup>
 

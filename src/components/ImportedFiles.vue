@@ -27,7 +27,7 @@
                     </v-row>                    
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn color="secondary" :disabled="file.status === 1">View Transactions</v-btn>
+                    <v-btn color="secondary" @click="routeToTransactions(file.pk)" :disabled="file.status === 1">View Transactions</v-btn>
                     <v-btn color="error" @click="rollbackFile(file)" v-if="file.status === 0">Delete</v-btn>                    
                     <v-btn color="success" @click="restoreFile(file)" v-if="file.status === 1">Restore</v-btn>                    
                 </v-card-actions>
@@ -43,6 +43,7 @@ import ImportFileTypeEnum from '@/data/enumerations/ImportFileType';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 import { formatDate, DateFormats } from '@/utilities/DateFormattingUtility';
+import router from "@/router";
 
 const confirmationStore = useConfirmationStore();
 const snackbarStore = useSnackbarStore();
@@ -66,5 +67,9 @@ async function restoreFile(file: ImportedFile) {
         await new ImportedFileService().put(file);
         snackbarStore.setMessage("File successfully restored.", "success");
     });
+}
+
+function routeToTransactions(fileId: number) {
+    router.push({path: "/transactions", query: {fileId: fileId, allDates: "true"}});
 }
 </script>

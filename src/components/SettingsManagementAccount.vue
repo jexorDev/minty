@@ -23,6 +23,14 @@
         <template v-slot:card-content>
             <AccountAddEditForm v-if="selectedAccount" v-model:account="selectedAccount"></AccountAddEditForm>
         </template>
+         <template v-slot:rules-content>
+          <div>
+              <v-icon icon="mdi-information-outline"></v-icon>
+              Any match on rules will map transactions to this account during a file import
+          </div>
+          <v-divider thickness="2" class="my-2" color="white"></v-divider>
+          <TagsContainer v-if="selectedAccount" v-model:selected-tags="selectedAccount.rules" :selectable-tags="[]"></TagsContainer>
+        </template>
     </SettingsManagement>
     <v-dialog v-model="showMergeDialog" max-width="600">
         <v-card>
@@ -148,15 +156,12 @@ function routeToTransactions(): void {
 
 watch(selectedAccount, async () => {
   if (selectedAccount.value?.pk) {
-    //selectedAccountRules.value = await new AccountRuleService(selectedAccount.value.pk).getMultiple();
     router.push({query: {"accountId": selectedAccount.value.pk}})
-  } else {
-    selectedAccountRules.value = [];
-  }
+  } 
 })
 
 const filteredaccounts = computed(() => AccountFilter.value 
-  ? accountStore.accounts.filter(x => x.name.toLowerCase().startsWith(AccountFilter.value.toLowerCase())) 
+  ? accountStore.accounts.filter(x => x.name.toLowerCase().indexOf(AccountFilter.value.toLowerCase()) >= 0) 
   : accountStore.accounts.sort((a, b) => a.name.localeCompare(b.name)));
 
 </script>

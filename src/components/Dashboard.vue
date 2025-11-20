@@ -172,7 +172,7 @@ const spendingByCategoryTableData = computed(() => {
 });
 
 function routeToUncategorizedTransactions() {
-  router.push({path: "/transactions", query: {uncategorized: 'true'}})
+  router.push({path: "/transactions", query: {allDates: "true", uncategorized: 'true'}})
 }
 
 function categoryClicked(category: AggregatedCategory) {

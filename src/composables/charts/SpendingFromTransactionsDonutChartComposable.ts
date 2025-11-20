@@ -4,7 +4,7 @@ import type { AggregatedCategory } from '../data/CategoryAggregatorTransactionSe
 
 export function useSpendingFromTransactionsDonutChart(data: Ref<AggregatedCategory[]>) {
     
-    const {options} = useDonutChart(false);
+    const {options} = useDonutChart(false, () => {});
 
     const series = computed(() => [{
         data: toValue(data).sort((a, b) => {return b.total - a.total}).map(x => {return {x: x.name, y: x.total}})

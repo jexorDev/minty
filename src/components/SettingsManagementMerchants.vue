@@ -18,6 +18,33 @@
         <template v-slot:card-content>
             <MerchantAddEditForm v-if="selectedMerchant" v-model:merchant="selectedMerchant"></MerchantAddEditForm>
         </template>
+         <template v-slot:rules-content>
+          <div class="text-overline">Merchant Mappings</div>
+          <div>
+              <v-icon icon="mdi-information-outline"></v-icon>
+              Any match on rules will map transactions to this merchant during a file import
+          </div>
+          <v-divider thickness="2" class="my-2" color="white"></v-divider>
+          <TagsContainer v-if="selectedMerchant" v-model:selected-tags="selectedMerchant.rules" :selectable-tags="[]"></TagsContainer>
+
+          <div class="text-overline">Force Category</div>
+          <div>
+              <v-icon icon="mdi-information-outline"></v-icon>
+              Any transactions during the import process that map to this merchant will be updated with the selected category
+          </div>
+          <v-divider thickness="2" class="my-2" color="white"></v-divider>
+          <v-autocomplete 
+            v-if="selectedMerchant"
+            v-model="selectedMerchant.forceCategoryId" 
+            clearable 
+            :items="categoryStore.categories" 
+            item-title="name" 
+            item-value="pk" 
+            label="Category"
+            variant="outlined" 
+            density="compact">
+          </v-autocomplete>
+        </template>
     </SettingsManagement>
       <v-dialog v-model="showMergeDialog" max-width="600">
         <v-card>
@@ -30,14 +57,14 @@
                 </v-row>
                 <v-row>
                 <v-col>
-                    <v-autocomplete 
-                        v-model="selectedMergeMerchantId" 
-                        :items="merchantStore.merchants" 
-                        item-title="name" 
-                        item-value="pk"
-                        variant="outlined"
-                        density="compact">
-                    </v-autocomplete>
+                  <v-autocomplete 
+                      v-model="selectedMergeMerchantId" 
+                      :items="merchantStore.merchants" 
+                      item-title="name" 
+                      item-value="pk"
+                      variant="outlined"
+                      density="compact">
+                  </v-autocomplete>
                 </v-col>
                 </v-row>
             </v-card-text>
@@ -53,11 +80,13 @@ import type Merchant from '@/data/interfaces/Merchant';
 import GenericService from '@/data/services/GenericService';
 import MerchantService from '@/data/services/MerchantService';
 import router from '@/router';
+import { useCategoryStore } from '@/stores/CategoryStore';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
 import { useMerchantStore } from '@/stores/MerchantStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
 
 const merchantStore = useMerchantStore();
+const categoryStore = useCategoryStore();
 const snackbarStore = useSnackbarStore();
 const confirmationStore = useConfirmationStore();
 
@@ -138,14 +167,12 @@ function routeToTransactions(): void {
 
 watch(selectedMerchant, async () => {
   if (selectedMerchant.value?.pk) {
-    //selectedCategoryRules.value = await new CategoryRuleService(selectedCategory.value.pk).getMultiple();
     router.push({query: {"merchantId": selectedMerchant.value.pk}});
-  } else {
-    //selected rules = []
   }
 })
 
-const filteredMerchants = computed(() => merchantFilter.value ? merchantStore.merchants.filter(x => x.name.toLowerCase().startsWith(merchantFilter.value.toLowerCase())) : merchantStore.merchants);
-
+const filteredMerchants = computed(() => merchantFilter.value 
+  ? merchantStore.merchants.filter(x => x.name.toLowerCase().indexOf(merchantFilter.value.toLowerCase()) >= 0) 
+  : merchantStore.merchants.sort((a, b) => a.name.localeCompare(b.name)));
 
 </script>

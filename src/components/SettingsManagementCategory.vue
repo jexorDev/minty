@@ -1,8 +1,7 @@
 <template>
     <SettingsManagement 
         v-model:selected-item="selectedCategory"
-        v-model:filter-string="categoryFilter"
-        v-model:selected-rules="selectedCategoryRules"
+        v-model:filter-string="categoryFilter"        
         :items="filteredCategories"
         :is-loading="isSaving"
         :is-new-item="!selectedCategory?.pk"
@@ -23,6 +22,14 @@
         </template>
         <template v-slot:card-content>
             <CategoryAddEditForm v-if="selectedCategory" v-model:category="selectedCategory"></CategoryAddEditForm>
+        </template>
+        <template v-slot:rules-content>
+          <div>
+              <v-icon icon="mdi-information-outline"></v-icon>
+              Any match on rules will map transactions to this category during a file import
+          </div>
+          <v-divider thickness="2" class="my-2" color="white"></v-divider>
+          <TagsContainer v-if="selectedCategory" v-model:selected-tags="selectedCategory.rules" :selectable-tags="[]"></TagsContainer>
         </template>
     </SettingsManagement>
     <v-dialog v-model="showMergeDialog" max-width="600">
@@ -62,7 +69,6 @@ import { useSnackbarStore } from '@/stores/SnackbarStore';
 import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
 import GenericService from '@/data/services/GenericService';
-import CategoryRuleService from '@/data/services/CategoryRuleService';
 import router from "@/router";
 
 const categoryStore = useCategoryStore();
@@ -70,7 +76,6 @@ const snackbarStore = useSnackbarStore();
 const confirmationStore = useConfirmationStore();
 
 const selectedCategory = ref<Category | null>(null);
-const selectedCategoryRules = ref<string[]>([]);
 const showMergeDialog = ref(false);
 const selectedMergeCategoryId = ref<number | null>(null);
 const isSaving = ref(false);
@@ -95,10 +100,7 @@ async function saveCategory() {
     isSaving.value = true;
 
     if (selectedCategory.value.pk) {
-      Promise.all([
-        await new CategoryService().put(selectedCategory.value),
-        await new CategoryRuleService(selectedCategory.value!.pk!).postMultiple(selectedCategoryRules.value)
-      ]);
+      await new CategoryService().put(selectedCategory.value),
       categoryStore.categories = await new CategoryService().getMultiple();
       
     } else {
@@ -154,15 +156,12 @@ function routeToTransactions(): void {
 
 watch(selectedCategory, async () => {
   if (selectedCategory.value?.pk) {
-    selectedCategoryRules.value = await new CategoryRuleService(selectedCategory.value.pk).getMultiple();
     router.push({query: {"categoryId": selectedCategory.value.pk}})
-  } else {
-    selectedCategoryRules.value = [];
-  }
+  } 
 })
 
 const filteredCategories = computed(() => categoryFilter.value 
-  ? categoryStore.categories.filter(x => x.name.toLowerCase().startsWith(categoryFilter.value.toLowerCase())) 
+  ? categoryStore.categories.filter(x => x.name.toLowerCase().indexOf(categoryFilter.value.toLowerCase()) >= 0) 
   : categoryStore.categories.sort((a, b) => a.name.localeCompare(b.name)));
 
 </script>

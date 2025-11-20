@@ -8,6 +8,9 @@
           <v-icon icon="mdi-close" @click="showFilterDrawer = false"></v-icon>
         </template>
       </v-list-item>
+      <v-list-item v-if="fileId">
+        <v-chip label closable @click:close="fileId = null">File ID: {{ fileId }}</v-chip>
+      </v-list-item>
       <v-list-item subtitle="Dates">
         <v-radio-group v-model="dateFilterType" density="compact">
           <v-radio v-for="item in TransactionDateFilterTypeEnum.getItems()" :value="item.value" :label="item.description"></v-radio>
@@ -293,6 +296,7 @@ import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFi
   const tags = ref<Tag[]>([]);
   
   let timerId: number | null = null;
+  let fileId: string | null = null;
   
   onMounted(async () => {
     if (router.currentRoute.value.query.categoryId) {
@@ -320,6 +324,10 @@ import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFi
 
     if (router.currentRoute.value.query.uncategorized) {      
       uncategorizedTransactionsOnly.value = true;      
+    }
+
+    if (router.currentRoute.value.query.fileId) {
+      fileId = router.currentRoute.value.query.fileId.toString();
     }
 
     Promise.all([
@@ -351,7 +359,8 @@ import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFi
           categoryId: filterCategoryId.value,
           merchantId: filterMerchantId.value,
           accountId: filterAccountId.value,
-          uncategorizedTransactionsOnly: uncategorizedTransactionsOnly.value
+          uncategorizedTransactionsOnly: uncategorizedTransactionsOnly.value,
+          fileId: fileId
         }).getMultiple();   
     } finally {
       isLoading.value = false;

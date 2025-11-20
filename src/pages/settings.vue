@@ -14,13 +14,13 @@
       <v-container fluid>
         <v-tabs-window v-model="tab">
           <v-tabs-window-item value="category">     
-            <SettingsManagementCategory></SettingsManagementCategory>
+            <SettingsManagementCategory v-if="tab === 'category'"></SettingsManagementCategory>
           </v-tabs-window-item>
           <v-tabs-window-item value="merchant">
-            <SettingsManagementMerchants></SettingsManagementMerchants>
+            <SettingsManagementMerchants v-if="tab === 'merchant'"></SettingsManagementMerchants>
           </v-tabs-window-item>
           <v-tabs-window-item value="account">
-            <SettingsManagementAccount></SettingsManagementAccount>
+            <SettingsManagementAccount v-if="tab === 'account'"></SettingsManagementAccount>
           </v-tabs-window-item>        
           <v-tabs-window-item value="imported-files">
             <ImportedFiles></ImportedFiles>

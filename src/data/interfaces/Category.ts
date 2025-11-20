@@ -3,4 +3,5 @@ export default interface Category {
     name: string;
     type: number;
     ignore: boolean;
+    rules: string[];
 }

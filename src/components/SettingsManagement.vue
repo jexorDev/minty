@@ -1,21 +1,18 @@
-<template v-bind="selectedItem">
-    <v-container fluid>
+<template>
         <v-row>
             <v-col 
                 cols="12" 
                 md="4"
                 v-if="!$vuetify.display.mobile || selectedItem === null">
-                <v-list :class="$vuetify.display.mobile ? '' : 'main-list-scroll'">
-                    <v-list-item>
-                        <v-text-field v-model="filterString" density="compact" label="Filter" clearable class="mt-4 mr-2"></v-text-field>                      
-                        <template v-slot:append>
-                            <v-btn @click="emit('addNew')" color="primary">Add New</v-btn>
-                        </template>
-                    </v-list-item>                        
-                    <div v-for="item in props.items">
+                <v-btn @click="emit('addNew')" color="primary">Add New</v-btn>
+                <v-text-field v-model="filterString" density="compact" label="Filter" clearable class="mt-4 mr-2"></v-text-field>                      
+                <v-virtual-scroll
+                    :items="items"
+                    style="height: 82vh">
+                    <template v-slot:default="{item}">
                         <slot name="list-item" v-bind="item"></slot>
-                    </div>
-                </v-list>
+                    </template>
+                </v-virtual-scroll>                
             </v-col>
             <v-col cols="12" md="8">
                 <v-card 
@@ -36,13 +33,8 @@
                             <v-tabs-window-item value="general">
                                 <slot name="card-content"></slot>
                             </v-tabs-window-item>
-                            <v-tabs-window-item value="rules" v-if="selectedRules">
-                                <div>
-                                    <v-icon icon="mdi-information-outline"></v-icon>
-                                    Any match on rules will map transactions to this category during a file import
-                                </div>
-                                <v-divider thickness="2" class="my-2" color="white"></v-divider>
-                                <TagsContainer v-model:selected-tags="selectedRules" :selectable-tags="[]"></TagsContainer>
+                            <v-tabs-window-item value="rules">
+                                <slot name="rules-content"></slot>
                             </v-tabs-window-item>
                         </v-tabs-window>                             
                     </v-card-text>
@@ -55,12 +47,10 @@
                 </v-card>
             </v-col>
         </v-row>
-    </v-container>
 </template> 
 <script lang="ts" setup>
 
 const selectedItem = defineModel<any | null>("selectedItem");
-const selectedRules = defineModel<string[] | undefined>("selectedRules");
 const filterString = defineModel<string>("filterString");
 const props = defineProps<{
     items: any[],

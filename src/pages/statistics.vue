@@ -3,33 +3,47 @@
         v-model="showFilterDrawer"    
         location="right">
         <v-list>
-        <v-list-item>
-            <template v-slot:append>          
-            <v-icon icon="mdi-close" @click="showFilterDrawer = false"></v-icon>
-            </template>
-        </v-list-item>
-        <v-list-item>        
-            <v-list-item-subtitle>Year</v-list-item-subtitle>
-            <v-select :items="userSettingsStore.yearsOfData" v-model="selectedYear" variant="outlined" density="compact"></v-select>
-        </v-list-item>
-        <v-list-item v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value">
-            <v-list-item-subtitle>Comparison with</v-list-item-subtitle>
-            <v-chip-group 
-                v-model="selectedComparisonYear"            
-                color="primary"  
-                column
-                >
-            <v-chip :value="1">Prior year</v-chip>          
-            <v-chip :value="2">Prior two years</v-chip>          
-            <v-chip :value="3">Prior three years</v-chip>    
-        </v-chip-group>
-           
-        </v-list-item>
-        <v-list-item v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value">
-            <v-list-item-subtitle>Category</v-list-item-subtitle>
-            <v-autocomplete clearable v-model="filterCategoryId" :items="filteredCategories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
-        </v-list-item>
-      
+            <v-list-item>
+                <template v-slot:append>          
+                <v-icon icon="mdi-close" @click="showFilterDrawer = false"></v-icon>
+                </template>
+            </v-list-item>
+            <v-list-item>        
+                <v-list-item-subtitle>Year</v-list-item-subtitle>
+                <v-select :items="userSettingsStore.yearsOfData" v-model="selectedYear" variant="outlined" density="compact"></v-select>
+            </v-list-item>
+            <v-list-item v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value">
+                <v-list-item-subtitle>Comparison with</v-list-item-subtitle>
+                <v-chip-group 
+                    v-model="selectedComparisonYear"            
+                    color="primary"  
+                    column
+                    >
+                    <v-chip :value="1">Prior year</v-chip>          
+                    <v-chip :value="2">Prior two years</v-chip>          
+                    <v-chip :value="3">Prior three years</v-chip>    
+                </v-chip-group>
+            </v-list-item>
+            <v-divider thickness="3" class="mb-2"></v-divider>
+            <v-list-item v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value" subtitle="Category">
+                <v-autocomplete clearable v-model="filterCategoryId" :items="filteredCategories" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
+            </v-list-item>
+            <v-list-item subtitle="Include Ignored Categories" v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value">
+                <v-switch 
+                    v-model="includeIgnoredCategories"
+                    color="primary"
+                    class="ml-2"
+                    density="compact"
+                ></v-switch>
+            </v-list-item>
+            <v-divider thickness="3" class="mb-2" v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value"></v-divider>
+            <v-list-item subtitle="Merchant" v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value">
+                <v-autocomplete clearable v-model="filterMerchantId" :items="merchantStore.merchants" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
+            </v-list-item>
+            <v-divider thickness="3" class="mb-2" v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value"></v-divider>
+            <v-list-item subtitle="Account" v-if="selectedViewType !== StatisticsPageViewTypeEnum.NetIncome.value">
+                <v-autocomplete clearable v-model="filterAccountId" :items="accountStore.accounts" item-title="name" item-value="pk" variant="outlined" density="compact"></v-autocomplete>
+            </v-list-item>      
         </v-list>
     </v-navigation-drawer>
     <v-toolbar color="secondary-darken-1" density="compact">
@@ -160,15 +174,22 @@ import StatisticsPageViewTypeEnum from '@/data/enumerations/StatisticsPageViewTy
 import YearCollectionModel from '@/data/classes/YearCollectionModel';
 import router from "@/router";
 import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
+import { useMerchantStore } from '@/stores/MerchantStore';
+import { useAccountStore } from '@/stores/AccountStore';
 
 const selectedYear = ref(getCurrentYear());
 const filterCategoryId = ref<number | null>(null);
+const filterMerchantId = ref<number | null>(null);
+const filterAccountId = ref<number | null>(null);
+const includeIgnoredCategories = ref(false);
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const showFilterDrawer = ref(true);
 const selectedViewType = ref<number>(StatisticsPageViewTypeEnum.Expenses.value);
 const selectedComparisonYear = ref<number | undefined>(undefined);
 const categoryStore = useCategoryStore();
 const userSettingsStore = useUserSettingsStore();  
+const merchantStore = useMerchantStore();
+const accountStore = useAccountStore();
 const key = ref(0);
 
 const grandTotal = computed<number>(() => {
@@ -210,7 +231,10 @@ async function getData() {
     categoryMonthTotals.value = await new StatisticsService().withUrlParameters({
         "fromDate": fromDate.value,
         "toDate": toDate.value,
-        "includeIgnored": false
+        "includeIgnoredCategories": includeIgnoredCategories.value,
+        "categoryId": filterCategoryId.value,
+        "merchantId": filterMerchantId.value,
+        "accountId": filterAccountId.value
     }).getMultiple();
 }
 
@@ -275,6 +299,8 @@ const {options: spendingTreemapChartOptions, series: spendingTreemapChartSeries}
 function categoryClicked(category: AggregatedCategory) {
     router.push({path: "/transactions", query: {
         categoryId: category.id,
+        merchantId: filterMerchantId.value ?? "",
+        accountId: filterAccountId.value ?? "",        
         fromDate: fromDate.value,
         toDate: toDate.value
     }});
@@ -286,6 +312,8 @@ function monthClicked(year: number, month: number) {
 
     router.push({path: "/transactions", query: {
         categoryId: filterCategoryId.value ?? "",
+        merchantId: filterMerchantId.value ?? "",
+        accountId: filterAccountId.value ?? "",        
         fromDate: fromDate,
         toDate: toDate,
     }})
@@ -358,6 +386,10 @@ const spendingByCategoryTableData = computed(() => {
 
 watch(selectedYear, async () => await getData());
 watch(selectedComparisonYear, async () => await getData());
+watch(filterCategoryId, async () => getData());
+watch(filterMerchantId, async () => getData());
+watch(filterAccountId, async () => getData());
+watch(includeIgnoredCategories, async () => getData());
 watch(selectedViewType, (newValue, oldValue) => {
     filterCategoryId.value = null;
     if (newValue === StatisticsPageViewTypeEnum.NetIncome.value || oldValue === StatisticsPageViewTypeEnum.NetIncome.value){

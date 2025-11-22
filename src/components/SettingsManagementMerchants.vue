@@ -27,10 +27,10 @@
           <v-divider thickness="2" class="my-2" color="white"></v-divider>
           <TagsContainer v-if="selectedMerchant" v-model:selected-tags="selectedMerchant.rules" :selectable-tags="[]"></TagsContainer>
 
-          <div class="text-overline">Force Category</div>
+          <div class="text-overline">Merchant to Category Mapping</div>
           <div>
               <v-icon icon="mdi-information-outline"></v-icon>
-              Any transactions during the import process that map to this merchant will be updated with the selected category
+              Any transactions during the import process that map to this merchant will be subsequently have the selected category (overriding all other rules/match methods)
           </div>
           <v-divider thickness="2" class="my-2" color="white"></v-divider>
           <v-autocomplete 
@@ -103,7 +103,11 @@ onMounted(async () => {
 })
 
 function addNewMerchant() {
-  selectedMerchant.value = { } as Merchant;
+  selectedMerchant.value = {
+    name: "",
+    forceCategoryId: null,
+    rules: []
+   } as Merchant;
 }
 
 async function saveMerchant() {
@@ -114,7 +118,10 @@ async function saveMerchant() {
 
     if (selectedMerchant.value.pk) {
       await new MerchantService().put(selectedMerchant.value);
-      merchantStore.merchants = await new MerchantService().getMultiple();
+      const updatedMerchant = await new MerchantService().withRouteParameter(selectedMerchant.value.pk.toString()).getSingle();
+      selectedMerchant.value = updatedMerchant;
+      merchantStore.merchants = merchantStore.merchants.filter(x => x.pk !== updatedMerchant.pk);
+      merchantStore.merchants.push({...updatedMerchant});
     } else {
       const persistedMerchant = await new MerchantService().post(selectedMerchant.value);
       merchantStore.merchants.push(persistedMerchant);
@@ -171,7 +178,7 @@ watch(selectedMerchant, async () => {
   }
 })
 
-const filteredMerchants = computed(() => merchantFilter.value 
+const filteredMerchants = computed(() => merchantFilter.value
   ? merchantStore.merchants.filter(x => x.name.toLowerCase().indexOf(merchantFilter.value.toLowerCase()) >= 0) 
   : merchantStore.merchants.sort((a, b) => a.name.localeCompare(b.name)));
 

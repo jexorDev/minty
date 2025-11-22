@@ -88,7 +88,10 @@ onMounted(async () => {
 })
 
 function addNewAccount() {
-  selectedAccount.value = {  } as Account;
+  selectedAccount.value = { 
+    name: "",
+    rules: []
+   } as Account;
 }
 
 async function saveAccount() {
@@ -98,11 +101,11 @@ async function saveAccount() {
     isSaving.value = true;
 
     if (selectedAccount.value.pk) {
-      Promise.all([
-        await new AccountService().put(selectedAccount.value)
-      ]);
-      accountStore.accounts = await new AccountService().getMultiple();
-      
+      await new AccountService().put(selectedAccount.value);
+      const updatedAccount = await new AccountService().withRouteParameter(selectedAccount.value.pk.toString()).getSingle();
+      selectedAccount.value = updatedAccount;
+      accountStore.accounts = accountStore.accounts.filter(x => x.pk !== updatedAccount.pk);
+      accountStore.accounts.push({...updatedAccount});      
     } else {
       const persistedAccount = await new AccountService().post(selectedAccount.value);
       accountStore.accounts.push(persistedAccount);

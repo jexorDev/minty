@@ -1,5 +1,5 @@
 export default interface Account {
-    pk: number | null;
+    pk?: number | null;
     name: string;
     rules: string[];
 }

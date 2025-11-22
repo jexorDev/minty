@@ -50,11 +50,7 @@ function addNewTag() {
 }
 
 function removeTag(tag: string): void {
-    const index = selectedTags.value.indexOf(tag);
-    if (index >= 0) {
-      selectedTags.value.splice(index, 1);
-          console.log(selectedTags.value)
-    }
+    selectedTags.value = selectedTags.value.filter(x => x !== tag);    
 }
 
 watch(selectedExistingTag, (newValue, oldValue) => {

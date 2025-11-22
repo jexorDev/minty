@@ -72,9 +72,8 @@ export default abstract class BaseService<T> {
         await this.axiosInstance.post(this.url, data);        
     }
 
-    async put(data: T): Promise<T> {
+    async put(data: T): Promise<void> {
         const res = await this.axiosInstance.put(this.url, data);
-        return res.data as T;
     }
 
     async delete(): Promise<void> {

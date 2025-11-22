@@ -90,6 +90,9 @@ onMounted(async () => {
 function addNewCategory() {
   selectedCategory.value = {
     type: 0, 
+    ignore: false,
+    name: "",
+    rules: []
   } as Category;
 }
 
@@ -100,9 +103,11 @@ async function saveCategory() {
     isSaving.value = true;
 
     if (selectedCategory.value.pk) {
-      await new CategoryService().put(selectedCategory.value),
-      categoryStore.categories = await new CategoryService().getMultiple();
-      
+      await new CategoryService().put(selectedCategory.value);
+      const updatedCategory = await new CategoryService().withRouteParameter(selectedCategory.value.pk.toString()).getSingle();
+      selectedCategory.value = updatedCategory;
+      categoryStore.categories = categoryStore.categories.filter(x => x.pk !== updatedCategory.pk);
+      categoryStore.categories.push({...updatedCategory});      
     } else {
       const persistedCategory = await new CategoryService().post(selectedCategory.value);
       categoryStore.categories.push(persistedCategory);

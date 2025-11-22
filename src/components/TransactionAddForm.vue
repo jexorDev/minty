@@ -307,7 +307,7 @@ async function saveAddDialog() {
       const persistedCategory = await new CategoryService().post(newCategory.value);
       categoryStore.categories.push(persistedCategory);
       if (tab.value === "general") {
-        fetchedTransaction.value.categoryId = persistedCategory.pk;
+        fetchedTransaction.value.categoryId = persistedCategory.pk!;
       } else {
         const firstSplit = fetchedTransactionSplits.value.find(x => x.categoryId === undefined);
         if (firstSplit) {
@@ -317,11 +317,11 @@ async function saveAddDialog() {
     } else if (newMerchant.value) {
       const persistedMerchant = await new MerchantService().post(newMerchant.value);
       merchantStore.merchants.push(persistedMerchant);
-      fetchedTransaction.value.merchantId = persistedMerchant.pk;
+      fetchedTransaction.value.merchantId = persistedMerchant.pk!;
     } else if (newAccount.value) {
       const persistedAccount = await new AccountService().post(newAccount.value);
       accountStore.accounts.push(persistedAccount);
-      fetchedTransaction.value.accountId = persistedAccount.pk;
+      fetchedTransaction.value.accountId = persistedAccount.pk!;
     }
 
     snackbarStore.setMessage("Successfully saved.", "success");    

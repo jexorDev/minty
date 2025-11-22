@@ -1,5 +1,5 @@
 export default interface Merchant {
-    pk: number | null;
+    pk?: number | null;
     name: string;
     forceCategoryId: number | null;
     rules: string[];

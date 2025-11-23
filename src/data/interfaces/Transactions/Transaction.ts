@@ -4,10 +4,10 @@ export default interface Transaction {
     description: string;
     amount: number;
     categoryId: number | null;
-    subcategoryId: number | null;
     merchantId: number | null;
     accountId: number | null;
     notes: string;
     tags: string[];
+    fileId?: number | null;
     modifiedDate?: Date | null;
 }

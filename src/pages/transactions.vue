@@ -123,11 +123,6 @@
       </v-list-item>
       
     </v-list>
-    <template v-slot:append>
-      <div class="pa-2">
-        <v-btn @click="getData" block color="secondary-darken-1">Refresh</v-btn>
-      </div>
-    </template>
   </v-navigation-drawer>
         
   <v-toolbar color="secondary-darken-1" density="compact">    
@@ -295,7 +290,8 @@ import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFi
   const customDateRangeTo = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const tags = ref<Tag[]>([]);
   
-  let timerId: number | null = null;
+  let quickSearchTimer: number | null = null;
+  let mainSearchTimer: number | null = null;
   let fileId: string | null = null;
   
   onMounted(async () => {
@@ -346,25 +342,30 @@ import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFi
   
   async function getData(): Promise<void> {
 
-    try {
+    if (mainSearchTimer) {
       isLoading.value = true;
-      
-      transactions.value = [];
-
-      transactions.value = await new TransactionSearchService()
-        .withUrlParameters({
-          fromDate: dateFilterType.value === TransactionDateFilterTypeEnum.AllDates.value ? null : fromDate.value,
-          toDate: dateFilterType.value === TransactionDateFilterTypeEnum.AllDates.value ? null : toDate.value,
-          includeIgnoredCategories: includeIgnoredCategories.value,
-          categoryId: filterCategoryId.value,
-          merchantId: filterMerchantId.value,
-          accountId: filterAccountId.value,
-          uncategorizedTransactionsOnly: uncategorizedTransactionsOnly.value,
-          fileId: fileId
-        }).getMultiple();   
-    } finally {
-      isLoading.value = false;
+      clearTimeout(mainSearchTimer);
     }
+    
+    mainSearchTimer = setTimeout(async () => {
+        try {
+        transactions.value = [];
+  
+        transactions.value = await new TransactionSearchService()
+          .withUrlParameters({
+            fromDate: dateFilterType.value === TransactionDateFilterTypeEnum.AllDates.value ? null : fromDate.value,
+            toDate: dateFilterType.value === TransactionDateFilterTypeEnum.AllDates.value ? null : toDate.value,
+            includeIgnoredCategories: includeIgnoredCategories.value,
+            categoryId: filterCategoryId.value,
+            merchantId: filterMerchantId.value,
+            accountId: filterAccountId.value,
+            uncategorizedTransactionsOnly: uncategorizedTransactionsOnly.value,
+            fileId: fileId
+          }).getMultiple();           
+        } finally {
+          isLoading.value = false;
+        }
+      }, 2000);
   }  
 
 async function refresh(): Promise<void> {
@@ -390,9 +391,9 @@ async function exportData(): Promise<void> {
 }
 
 async function searchUpdate(searchString: string): Promise<void> {
-  if (timerId) {
+  if (quickSearchTimer) {
       isQuickSearchLoading.value = true;
-    clearTimeout(timerId);
+    clearTimeout(quickSearchTimer);
   }
 
   if (!searchString) {
@@ -400,7 +401,7 @@ async function searchUpdate(searchString: string): Promise<void> {
       return;
   }
 
-  timerId = setTimeout(async () => {
+  quickSearchTimer = setTimeout(async () => {
     try {
       quickSearchTransactions.value = await new TransactionSearchService()
         .withUrlParameters({
@@ -434,6 +435,15 @@ function quickSearchFocusChanged(focused: boolean): void {
   isQuickSearchFocused.value = focused;
   quickSearchTransactions.value = [];
 }
+
+watch(selectedMonth, async () => getData());
+watch(selectedYear, async () => getData());
+watch(dateFilterType, async () => getData());
+watch(filterCategoryId, async () => getData());
+watch(uncategorizedTransactionsOnly, async () => getData());
+watch(includeIgnoredCategories, async () => getData());
+watch(filterMerchantId, async () => getData());
+watch(filterAccountId, async () => getData());
 
 </script>
 <style scoped>

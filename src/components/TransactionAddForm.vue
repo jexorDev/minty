@@ -22,8 +22,10 @@
       <v-tabs-window v-model="tab">
         <v-tabs-window-item value="general">
           <v-row no-gutters>
-            <v-col>
+            <v-col class="d-flex">
               <div class="text-overline">General Info</div>
+              <v-spacer></v-spacer>
+              <v-chip v-if="fetchedTransaction.fileId === null" color="info" variant="flat" density="compact" label>Manual</v-chip>
             </v-col>
           </v-row>
           <v-row>          
@@ -218,6 +220,8 @@
           </v-tabs-window>
         </v-container>
           <v-card-actions>
+            <v-btn variant="text" color="primary" :disabled="!fetchedTransaction.pk" @click="deleteTransaction">Delete</v-btn>
+            <v-spacer></v-spacer>
             <v-btn color="primary" variant="tonal" @click="show = false">Cancel</v-btn>
             <v-btn color="primary" variant="outlined" text="Save" @click="save()"></v-btn>
           </v-card-actions>  
@@ -254,13 +258,14 @@ import type Account from '@/data/interfaces/Account';
 import MerchantService from '@/data/services/MerchantService';
 import AccountService from '@/data/services/AccountService';
 import type Tag from '@/data/interfaces/Tag';
+import { useConfirmationStore } from '@/stores/ConfirmationStore';
 
 const show = defineModel<boolean>("show")
 const tab = ref<"general" | "splits">("general");
 
 const props = defineProps<{
-  transaction?: TransactionSearch,
-  tags?: Tag[]
+  transaction: TransactionSearch | undefined,
+  tags: Tag[]
 }>();
 
 const emit = defineEmits<{(e: "refresh"): void}>();
@@ -275,17 +280,28 @@ const categoryStore = useCategoryStore();
 const merchantStore = useMerchantStore();
 const accountStore = useAccountStore();
 const snackbarStore = useSnackbarStore();
+const confirmationStore = useConfirmationStore();
 
 const newCategory = ref<Category | undefined>(undefined);
 const newMerchant = ref<Merchant | undefined>(undefined);
 const newAccount = ref<Account | undefined>(undefined);
 
-const selectableTags = computed(() => props.tags ? props.tags.map(x => x.text) : []);
+const selectableTags = computed(() => props.tags.map(x => x.text));
 
 watch(show, async (newValue) => {
   if (!newValue) return;  
 
   tab.value = "general";
+  fetchedTransaction.value = {
+    transactionDate: new Date(),
+    description: "",
+    notes: "",
+    amount: 0,
+    tags: [],
+    categoryId: null,
+    merchantId: null,
+    accountId: null,
+  } as Transaction;
   fetchedTransactionSplits.value = [];
 
   if (props.transaction) {
@@ -417,6 +433,21 @@ async function save() {
 
   show.value = false;
   emit("refresh");
+}
+
+async function deleteTransaction() {
+  try {
+    isSaving.value = true;
+
+    confirmationStore.setConfirmation("Are you sure you want to delete this transaction?", async () => {
+      await new TransactionsService().withRouteParameter(fetchedTransaction.value.pk!.toString()).delete();
+      show.value = false;
+      emit('refresh');
+    });
+
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 function allocateRemainingToSplit(split: TransactionSplit) {

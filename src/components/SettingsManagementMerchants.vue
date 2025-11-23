@@ -180,6 +180,6 @@ watch(selectedMerchant, async () => {
 
 const filteredMerchants = computed(() => merchantFilter.value
   ? merchantStore.merchants.filter(x => x.name.toLowerCase().indexOf(merchantFilter.value.toLowerCase()) >= 0) 
-  : merchantStore.merchants.sort((a, b) => a.name.localeCompare(b.name)));
+  : merchantStore.merchants);
 
 </script>

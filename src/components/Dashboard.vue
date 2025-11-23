@@ -92,20 +92,51 @@
           </v-card-text>
         </v-card>
       </v-col>      
-      <v-col cols="12" md="2">
-        <v-card color="secondary-darken-1">
-          <v-card-title>
-            Uncategorized Transactions
-          </v-card-title>
-          <v-card-text>
-            <div class="text-h1 d-flex justify-center">{{ uncategorizedTransactions.length }}</div>
-          </v-card-text>
-          <v-card-actions>
-            <v-btn block text="View" variant="tonal" color="primary" @click="routeToUncategorizedTransactions"></v-btn>
-          </v-card-actions>
-        </v-card>
+      <v-col cols="12" md="4">
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-card color="secondary-darken-1">
+              <v-card-title>
+                Uncategorized Transactions
+              </v-card-title>
+              <v-card-text>
+                <div class="text-h1 d-flex justify-center">{{ uncategorizedTransactions.length }}</div>
+              </v-card-text>
+              <v-card-actions>
+                <v-btn block text="View" variant="tonal" color="primary" @click="routeToUncategorizedTransactions"></v-btn>
+              </v-card-actions>
+            </v-card>
+
+          </v-col>
+          <v-col cols="12" md="6"></v-col>
+
+        </v-row>
+        <v-row>
+          <v-col>
+ <v-card title="Budgets">
+
+            <v-list max-height="600">
+              <v-list-item v-for="budget in budgets" :title="budget.categoryName">
+                <template v-slot:append>
+                  {{ budget.amount }}
+                </template>
+                                        <v-progress-linear 
+                              v-if="budget.currentMonthBudget" 
+                              :model-value="budget.budgetPercent * 100"
+                              :color="budget.budgetPercent > 1 ? 'error' : 'primary'"
+                              height="22"
+                              rounded="lg">
+                              <v-chip variant="flat">
+                                  {{ formatNumber(budget.totalToDate, NumberFormats.Price) }}
+                              </v-chip>
+                          </v-progress-linear>
+              </v-list-item>
+            </v-list>
+          </v-card>
+          </v-col>
+        </v-row>
       </v-col>
-      <v-col cols="12" md="2"></v-col>
+        
     </v-row>
   </v-container> 
 </template>
@@ -125,11 +156,14 @@ import router from '@/router';
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';
 import TransactionSearchService from '@/data/services/TransactionSearchService';
 import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
+import BudgetModel from '@/data/classes/BudgetModel';
+import BudgetService from '@/data/services/BudgetService';
 
 const selectedCurrentYear = ref(getCurrentYear());
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const selectedSpendingByCategoryChartType = ref(0);
 const uncategorizedTransactions = ref<TransactionSearch[]>([]);
+const budgets = ref<BudgetModel[]>([]);
 
 const yearMonthMapFilter = computed<YearMonthAggregatorFilter>(() => {
    return {    
@@ -162,9 +196,10 @@ onMounted(async () => {
     uncategorizedTransactions.value = await new TransactionSearchService().withUrlParameters({
       uncategorizedTransactionsOnly: true,
       includeIgnoredCategories: true
-    }).getMultiple()
-
+    }).getMultiple(),
+    budgets.value = await new BudgetService().getMultiple().then(data => data.map(x => new BudgetModel(x)))
   ]);
+  budgets.value.forEach(async x => await x.setStatistics());
 })
 
 const spendingByCategoryTableData = computed(() => {

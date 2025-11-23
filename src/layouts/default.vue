@@ -71,6 +71,7 @@
         <v-list density="compact" nav>          
           <v-list-item prepend-icon="mdi-view-dashboard-variant-outline" title="Dashboard" value="dashboard" to="/"></v-list-item>
           <v-list-item prepend-icon="mdi-invoice-list-outline" title="Transactions" value="transactions" to="/transactions"></v-list-item>
+          <v-list-item prepend-icon="mdi-account-cash" title="Budgets" value="budgets" to="/budgets"></v-list-item>
           <v-list-item prepend-icon="mdi-chart-areaspline" title="Statistics" value="stats" to="/statistics"></v-list-item>
           <v-list-item prepend-icon="mdi-cog-outline" title="Settings" value="settings" to="/settings"></v-list-item>
         </v-list>

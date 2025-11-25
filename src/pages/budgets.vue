@@ -9,18 +9,20 @@
             >
             Add
             </v-btn>       
-        </template>
-       
+        </template>       
     </v-toolbar>
-
+    <v-empty-state v-if="budgets.length === 0"
+        headline="You haven't added any budgets"
+        text="Use the Add button. Budgets will appear here">        
+    </v-empty-state>
     <v-container>
-        <v-card v-for="budget in budgets" class="mb-2">
+        <v-card v-for="budget in budgets" class="mb-2">            
             <v-card-text>
                 <v-row>
                     <v-col cols="12" md="4">
                         <div class="d-flex justify-space-between ">              
                             <span class="text-overline">{{ budget.categoryName }}</span>
-                            <span>{{ formatNumber(budget.amount, NumberFormats.Price)}}</span>
+                            <span class="text-overline">{{ formatNumber(budget.amount, NumberFormats.Price)}} / {{ budget.type === BudgetTypeEnum.Monthly.value ? "Month" : "Year" }}</span>
                         </div>
                         <v-progress-linear 
                             v-if="budget.currentMonthBudget" 
@@ -32,21 +34,29 @@
                                 {{ formatNumber(budget.totalToDate, NumberFormats.Price) }}
                             </v-chip>
                         </v-progress-linear>
-                        </v-col>
-                        <v-col cols="12" md="6">
-                        <v-chip class="ml-1 mb-1" label v-for="month in budget.budgetMonths" :color="month.budgetPercent > 1 ? 'error' : 'success'">
-                            <div>
-                                {{ month.monthName.substring(0, 3) }}
-                            </div>
-                            <div class="font-weight-medium ml-1">
-                                {{ formatNumber(month.monthTotal, NumberFormats.Price) }}
-                            </div>
-                        </v-chip>
-                        
                     </v-col>
-                    <v-col cols="12" md="2">
-                        <div class="text-caption">Monthly Average: {{ formatNumber(budget.monthlyAverage, NumberFormats.Price) }}</div>
-                        <div class="text-caption">YTD Total: {{ formatNumber(budget.grandTotal, NumberFormats.Price) }}</div>
+                    <v-col v-if="!$vuetify.display.mobile" md="3">
+                        <v-sparkline
+                            :model-value="budget.budgetMonths.map(x => x.monthTotal)"
+                            color="secondary"
+                            line-width="2"
+                            padding="16"
+                        ></v-sparkline>
+                    </v-col>                       
+                    <v-spacer></v-spacer>
+                    <v-col cols="4" md="2">
+                        <div class="text-overline">Monthly Avg</div> 
+                        <div class="text-body-1">
+                            {{ formatNumber(budget.monthlyAverage, NumberFormats.Price) }}
+                        </div>
+                    </v-col>
+                    <v-col cols="4" md="2">
+                        <div class="text-overline">YTD Total</div>
+                        <div class="text-body-1">
+                            {{ formatNumber(budget.grandTotal, NumberFormats.Price) }}
+                        </div>
+                    </v-col>
+                    <v-col cols="4" md="1" class="d-flex justify-end">
                         <v-menu>
                             <template v-slot:activator="{ props }">
                                 <v-btn
@@ -65,12 +75,22 @@
                         </v-menu>
                     </v-col>
                 </v-row>
-            </v-card-text>
-            
+                <v-row>
+                     <v-col>
+                        <v-chip class="ml-1 mb-1" label v-for="month in budget.budgetMonths" :color="month.budgetPercent > 1 ? 'error' : 'success'">
+                            <div>
+                                {{ month.monthName.substring(0, 3) }}
+                            </div>
+                            <div class="font-weight-medium ml-1">
+                                {{ formatNumber(month.monthTotal, NumberFormats.Price) }}
+                            </div>
+                        </v-chip>
+                        
+                    </v-col>
+                </v-row>
+            </v-card-text>            
         </v-card>
-
     </v-container>
-
 
     <v-dialog v-if="selectedBudget" v-model="showAddEditDialog" max-width="600">
         <v-card :title="selectedBudget.isNew ? 'Edit Budget' : 'Add Budget'" color="secondary-darken-1">
@@ -81,13 +101,13 @@
                  <v-btn @click="showAddEditDialog = false" color="primary" variant="tonal">Cancel</v-btn>
                 <v-btn @click="saveBudget" color="primary" variant="outlined">Save</v-btn>
             </v-card-actions>
-        </v-card>
-        
+        </v-card>        
     </v-dialog>
 
 </template>
 <script lang="ts" setup>
 import BudgetModel from '@/data/classes/BudgetModel';
+import BudgetTypeEnum from '@/data/enumerations/BudgetType';
 import BudgetService from '@/data/services/BudgetService';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';

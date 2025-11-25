@@ -28,16 +28,29 @@
             prefix="$"
         ></v-text-field>
 
-        <div>
-            {{ selectedBudget.grandTotal }} {{ selectedBudget.monthlyAverage }}
-        </div>
+        <v-row>
+            <v-col>
+                <div class="text-overline">
+                    Total YTD
+                </div>
+                 {{ formatNumber(selectedBudget.grandTotal, NumberFormats.Price) }} 
+            </v-col>
+            <v-col>
+                <div class="text-overline">
+                    Monthly Average
+                </div>
+                {{ formatNumber(selectedBudget.monthlyAverage, NumberFormats.Price) }}
 
+            </v-col>
+        </v-row>
+    
     </div>
 </template>
 <script lang="ts" setup>
 import type BudgetModel from '@/data/classes/BudgetModel';
 import BudgetTypeEnum from '@/data/enumerations/BudgetType';
 import { useCategoryStore } from '@/stores/CategoryStore';
+import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 
 const categoryStore = useCategoryStore();
 

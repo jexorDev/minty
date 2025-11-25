@@ -31,7 +31,7 @@
                 </v-container>
         </v-card>
     </v-dialog>
-    <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="searchUpdate(searchString)"></TransactionAddForm>
+    <!-- <TransactionAddForm :transaction="selectedTransaction" v-model:show="showAddTransactionDialog" @refresh="searchUpdate(searchString)"></TransactionAddForm> -->
 </template>
 <script lang="ts" setup>
 import type TransactionSearch from '@/data/interfaces/Transactions/TransactionSearch';

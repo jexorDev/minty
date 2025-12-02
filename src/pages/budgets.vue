@@ -19,75 +19,92 @@
         <v-card v-for="budget in budgets" class="mb-2">            
             <v-card-text>
                 <v-row>
-                    <v-col cols="12" md="4">
-                        <div class="d-flex justify-space-between ">              
-                            <span class="text-overline">{{ budget.categoryName }}</span>
-                            <span class="text-overline">{{ formatNumber(budget.amount, NumberFormats.Price)}} / {{ budget.type === BudgetTypeEnum.Monthly.value ? "Month" : "Year" }}</span>
-                        </div>
-                        <v-progress-linear 
+                
+                    <v-col cols="12" md="2">
+                        <div class="text-overline">{{ budget.categoryName }}</div>
+                        <v-progress-circular 
                             v-if="budget.currentMonthBudget" 
                             :model-value="budget.budgetPercent * 100"
                             :color="budget.budgetPercent > 1 ? 'error' : 'primary'"
-                            height="22"
-                            rounded="lg">
-                            <v-chip variant="flat">
+                            size="106"
+                            width="10">
+                            <div class="text-subtitle-2">
                                 {{ formatNumber(budget.totalToDate, NumberFormats.Price) }}
-                            </v-chip>
-                        </v-progress-linear>
+                            </div>
+                        </v-progress-circular>
                     </v-col>
-                    <v-col v-if="!$vuetify.display.mobile" md="3">
-                        <v-sparkline
-                            :model-value="budget.budgetMonths.map(x => x.monthTotal)"
-                            color="secondary"
-                            line-width="2"
-                            padding="16"
-                        ></v-sparkline>
-                    </v-col>                       
-                    <v-spacer></v-spacer>
-                    <v-col cols="4" md="2">
-                        <div class="text-overline">Monthly Avg</div> 
-                        <div class="text-body-1">
-                            {{ formatNumber(budget.monthlyAverage, NumberFormats.Price) }}
-                        </div>
-                    </v-col>
-                    <v-col cols="4" md="2">
-                        <div class="text-overline">YTD Total</div>
-                        <div class="text-body-1">
-                            {{ formatNumber(budget.grandTotal, NumberFormats.Price) }}
-                        </div>
-                    </v-col>
-                    <v-col cols="4" md="1" class="d-flex justify-end">
-                        <v-menu>
-                            <template v-slot:activator="{ props }">
-                                <v-btn
+                    <v-col cols="12" md="10">
+                        <v-row>                              
+                            <v-col>
+                                <div class="d-flex d-inline">
+                                    <div class="mr-5">
+                                        <div class="text-overline">Budgeted</div>
+                                        <div class="text-body-1">
+                                            {{ formatNumber(budget.amount, NumberFormats.Price)}} / {{ budget.type === BudgetTypeEnum.Monthly.value ? "Month" : "Year" }}
+                                        </div>
+                                    </div>
+                                    <v-divider vertical thickness="3" class="mr-5"></v-divider>
+                                    <div class="mr-5">
+                                        <div class="text-overline">Remaining</div>
+                                        <div class="text-body-1">
+                                            {{ formatNumber(budget.remaining, NumberFormats.Price)}}
+                                        </div>
+                                    </div>
+                                    <v-divider vertical thickness="3" class="mr-5"></v-divider>
+                                    <div class="mr-5">
+                                        <div class="text-overline">Monthly Avg</div> 
+                                        <div class="text-body-1">
+                                            {{ formatNumber(budget.monthlyAverage, NumberFormats.Price) }}
+                                        </div>
+                                    </div>
+                                    <v-divider vertical thickness="3" class="mr-5"></v-divider>
+                                    <div class="mr-5">
+                                        <div class="text-overline">YTD Total</div>
+                                        <div class="text-body-1">
+                                            {{ formatNumber(budget.grandTotal, NumberFormats.Price) }}
+                                        </div>
+                                    </div>
+                                </div>                                
+                            </v-col>
+                            <v-col v-if="!$vuetify.display.mobile" md="3">
+                                <div class="text-overline">Trendline</div>
+                                <v-sparkline
+                                    :model-value="budget.budgetMonths.map(x => x.monthTotal)"
                                     color="secondary"
-                                    variant="text"
-                                    density="compact"
-                                    v-bind="props"
-                                >
-                                    Options
-                                </v-btn>
-                            </template>
-                            <v-list>
-                                <v-list-item title="Edit" @click="setSelected(budget)"></v-list-item>                            
-                                <v-list-item title="Delete" @click="deleteBudget(budget)"></v-list-item>                            
-                            </v-list>
-                        </v-menu>
+                                    line-width="2"
+                                    padding="16"
+                                ></v-sparkline>
+                            </v-col>                     
+                            <div class="d-flex justify-end mt-2 mr-2">
+                                <v-menu>
+                                    <template v-slot:activator="{ props }">
+                                        <v-icon
+                                            icon="mdi-dots-vertical"
+                                            v-bind="props"
+                                        >                                            
+                                        </v-icon>
+                                    </template>
+                                    <v-list>
+                                        <v-list-item title="Edit" @click="setSelected(budget)"></v-list-item>                            
+                                        <v-list-item title="Delete" @click="deleteBudget(budget)"></v-list-item>                            
+                                    </v-list>
+                                </v-menu>
+                            </div>            
+                        </v-row>
+                        <v-row>
+                            <v-col>
+                                <v-chip class="ml-1 mb-1" label v-for="month in budget.budgetMonths" :color="month.budgetPercent > 1 ? 'error' : 'success'">
+                                    <div>
+                                        {{ month.monthName.substring(0, 3) }}
+                                    </div>
+                                    <div class="font-weight-medium ml-1">
+                                        {{ formatNumber(month.monthTotal, NumberFormats.Price) }}
+                                    </div>
+                                </v-chip>                                
+                            </v-col>
+                        </v-row>
                     </v-col>
-                </v-row>
-                <v-row>
-                     <v-col>
-                        <v-chip class="ml-1 mb-1" label v-for="month in budget.budgetMonths" :color="month.budgetPercent > 1 ? 'error' : 'success'">
-                            <div>
-                                {{ month.monthName.substring(0, 3) }}
-                            </div>
-                            <div class="font-weight-medium ml-1">
-                                {{ formatNumber(month.monthTotal, NumberFormats.Price) }}
-                            </div>
-                        </v-chip>
-                        
-                    </v-col>
-                </v-row>
+                </v-row>   
             </v-card-text>            
         </v-card>
     </v-container>

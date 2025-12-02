@@ -50,7 +50,7 @@ export default class BudgetModel {
     }
 
     get categoryName(): string {
-        return this.statistics.length > 0 ? this.statistics[0].categoryName : "";
+        return this.budget.categoryName;
     }
 
     get type(): number {
@@ -72,11 +72,11 @@ export default class BudgetModel {
     }
 
     get totalToDate(): number {
-        return this.type === BudgetTypeEnum.Monthly.value ? this.currentMonthBudget.monthTotal : this.grandTotal;
+        return this.type === BudgetTypeEnum.Monthly.value && this.currentMonthBudget ? this.currentMonthBudget.monthTotal : this.grandTotal;
     }
 
     get budgetPercent(): number {
-        return (this.type === BudgetTypeEnum.Monthly.value ? this.currentMonthBudget.monthTotal : this.grandTotal) / this.amount;
+        return (this.type === BudgetTypeEnum.Monthly.value && this.currentMonthBudget ? this.currentMonthBudget.monthTotal : this.grandTotal) / this.amount;
     }
 
     get monthlyAverage(): number {
@@ -84,14 +84,16 @@ export default class BudgetModel {
     }
 
     get budgetMonths(): BudgetMonthModel[] {
-        return this.statistics.map(x => new BudgetMonthModel(x, this.amount));
+        return this.statistics.length > 0 ? this.statistics.map(x => new BudgetMonthModel(x, this.amount)) : [];
     }
 
-    get currentMonthBudget(): BudgetMonthModel {        
-        return this.budgetMonths[this.budgetMonths.length - 1];
+    get currentMonthBudget(): BudgetMonthModel | null {        
+        return this.budgetMonths.length > 0 ? this.budgetMonths[this.budgetMonths.length - 1] : null;
     }
 
-    
+    get remaining(): number {
+        return this.amount - this.totalToDate;
+    }    
 
     public async save(): Promise<void> {
         try {

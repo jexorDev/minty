@@ -113,26 +113,42 @@
         </v-row>
         <v-row>
           <v-col>
- <v-card title="Budgets">
+            <v-card title="Fast approaching budgets">
 
-            <v-list max-height="600">
-              <v-list-item v-for="budget in budgets" :title="budget.categoryName">
-                <template v-slot:append>
-                  {{ budget.amount }}
-                </template>
-                                        <v-progress-linear 
-                              v-if="budget.currentMonthBudget" 
-                              :model-value="budget.budgetPercent * 100"
-                              :color="budget.budgetPercent > 1 ? 'error' : 'primary'"
-                              height="22"
-                              rounded="lg">
-                              <v-chip variant="flat">
-                                  {{ formatNumber(budget.totalToDate, NumberFormats.Price) }}
-                              </v-chip>
-                          </v-progress-linear>
-              </v-list-item>
-            </v-list>
-          </v-card>
+              <v-list max-height="600">
+                <v-list-item v-for="budget in sortedBudgets" :key="budget.pk!">
+                  <template v-slot:prepend>
+                    <v-progress-circular 
+                      v-if="budget.currentMonthBudget" 
+                      :model-value="budget.budgetPercent * 100"
+                      :color="budget.budgetPercent > 1 ? 'error' : 'primary'"
+                      size="50"
+                      width="6">                 
+                    </v-progress-circular>
+                  </template>
+                  <template v-slot:append>
+                    <div >
+                      
+                    </div>  
+                  </template>
+                  <v-row>
+                    <v-col cols="6" class="pl-5">
+                      <div class="text-overline">{{ budget.categoryName }}</div>
+                      <div class="text-caption">{{ formatNumber(budget.totalToDate, NumberFormats.Price) }} of {{ formatNumber(budget.amount, NumberFormats.Price) }} used</div>
+                    </v-col>
+                    <v-col cols="3">
+                      <div class="text-overline">Budgeted</div>
+                      <div class="text-caption">{{ formatNumber(budget.amount, NumberFormats.Price)}} / {{ budget.type === BudgetTypeEnum.Monthly.value ? "Month" : "Year" }}</div>
+                    </v-col>
+                    <v-col cols="3">
+                      <div class="text-overline">Remaining</div>
+                      <div class="text-caption">{{ formatNumber(budget.remaining, NumberFormats.Price)}}</div>
+                    </v-col>
+                  </v-row>                                    
+                  <v-divider thickness="3" class="mt-1"></v-divider>
+                </v-list-item>
+              </v-list>
+            </v-card>
           </v-col>
         </v-row>
       </v-col>
@@ -158,6 +174,7 @@ import TransactionSearchService from '@/data/services/TransactionSearchService';
 import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
 import BudgetModel from '@/data/classes/BudgetModel';
 import BudgetService from '@/data/services/BudgetService';
+import BudgetTypeEnum from '@/data/enumerations/BudgetType';
 
 const selectedCurrentYear = ref(getCurrentYear());
 const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
@@ -197,10 +214,12 @@ onMounted(async () => {
       uncategorizedTransactionsOnly: true,
       includeIgnoredCategories: true
     }).getMultiple(),
-    budgets.value = await new BudgetService().getMultiple().then(data => data.map(x => new BudgetModel(x)))
+    budgets.value = (await new BudgetService().getMultiple().then(data => data.map(x => new BudgetModel(x))))
   ]);
   budgets.value.forEach(async x => await x.setStatistics());
 })
+
+const sortedBudgets = computed(() => (budgets.value.length > 5 ? budgets.value.sort((a, b) => a.remaining - b.remaining).slice(0, 5) : budgets.value));
 
 const spendingByCategoryTableData = computed(() => {
     return aggregatedCategories.value.map(x => {return {name: x.name, total: formatNumber(x.total, NumberFormats.Price)}});

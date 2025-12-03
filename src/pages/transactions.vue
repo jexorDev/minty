@@ -209,14 +209,16 @@
           <v-progress-circular indeterminate size="x-large" color="secondary" :width="7"></v-progress-circular>
         </v-empty-state>
         <v-virtual-scroll
+          id="transactions-container"
+          ref="transactionVirtualScroll"
           :items="filteredTransactions"
           style="height: 93vh"
         >
           <template v-slot:default="{ item }">
-            <TransactionsListItem :transaction="item" @selected-transaction-changed="setTransactionToEdit"></TransactionsListItem>
+            <TransactionsListItem :id="`transaction-${item.pk}`" :transaction="item" @selected-transaction-changed="setTransactionToEdit"></TransactionsListItem>
           </template>
         </v-virtual-scroll>
-        <v-empty-state
+         <v-empty-state
             v-if="!isLoading && filteredTransactions.length === 0"                            
             title="No results"
             text="Try a different search criteria"  
@@ -262,6 +264,7 @@ import router from '@/router';
 import { useMerchantStore } from '@/stores/MerchantStore';
 import { useAccountStore } from '@/stores/AccountStore';
 import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFilterType';
+import type { VVirtualScroll } from 'vuetify/components';
 
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
@@ -289,7 +292,8 @@ import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFi
   const customDateRangeFrom = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const customDateRangeTo = ref(formatDate(getCurrentDate(), DateFormats.ISO));
   const tags = ref<Tag[]>([]);
-  
+  const transactionVirtualScroll = ref<VVirtualScroll | null>(null);
+
   let quickSearchTimer: number | null = null;
   let mainSearchTimer: number | null = null;
   let fileId: string | null = null;
@@ -364,9 +368,54 @@ import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFi
           }).getMultiple();           
         } finally {
           isLoading.value = false;
+
+          if (selectedTransaction.value) {
+            const x = transactions.value.find(x => x.pk === selectedTransaction.value!.pk)
+            if (x) {
+              const index = filteredTransactions.value.indexOf(x);
+              scrollIntoView("#transaction-" + filteredTransactions.value[0].pk, index);
+            }
+          }
         }
       }, 2000);
-  }  
+}  
+
+function scrollIntoView(firstItemId: string, indexToScrollTo: number): void {
+   const parentEle = document.getElementById("transactions-container");
+  
+  if (parentEle) {
+    const childEle = parentEle.querySelectorAll('[id^="transaction-"]');
+    console.log(childEle)
+    if (childEle.length > 0) {
+      transactionVirtualScroll.value!.scrollToIndex(indexToScrollTo);
+      console.log('scrolling')
+      setActiveTransaction();
+      
+    } else {
+      console.log('waiting to scroll')
+      setTimeout(() => scrollIntoView(firstItemId, indexToScrollTo), 600);
+    }
+      
+  }
+}
+
+function setActiveTransaction(): void {
+  console.log('attempting to set active transaction')
+  const parentEle = document.getElementById("transactions-container");
+  
+  if (parentEle) {
+    const childEle = parentEle.querySelector("#transaction-" + selectedTransaction.value!.pk.toString());
+
+    if (childEle) {
+      childEle.classList.add('bg-grey-darken-3');
+      console.log('active transaction set')
+    } else {
+      console.log('waiting to set active transaction')
+      setTimeout(() => setActiveTransaction(), 600);
+    }
+      
+  }
+}
 
 async function refresh(): Promise<void> {
   Promise.all([

@@ -6,6 +6,7 @@
         :items="filteredaccounts"
         :is-loading="isSaving"
         :is-new-item="!selectedAccount?.pk"
+        :selected-item-id="selectedAccount?.pk ?? null"
         item-title="Account"
         @save="saveAccount"
         @delete="deleteAccount"
@@ -15,6 +16,7 @@
         >
         <template #list-item="item">
             <v-list-item 
+                :id="`settings-management-${item.pk}`"
                  @click="selectedAccount = item"
                 :title="item.name"
             >                

@@ -5,6 +5,7 @@
         :items="filteredMerchants"
         :is-loading="isSaving"
         :is-new-item="!selectedMerchant?.pk"
+        :selected-item-id="selectedMerchant?.pk ?? null"
         item-title="Merchant"
         @save="saveMerchant"
         @add-new="addNewMerchant"   
@@ -13,7 +14,10 @@
         @merge="showMergeDialog = true"
         >
         <template #list-item="item">
-            <v-list-item :title="item.name" @click="selectedMerchant = item"></v-list-item>
+            <v-list-item 
+              :id="`settings-management-${item.pk}`"
+              :title="item.name" 
+              @click="selectedMerchant = item"></v-list-item>
         </template>
         <template v-slot:card-content>
             <MerchantAddEditForm v-if="selectedMerchant" v-model:merchant="selectedMerchant"></MerchantAddEditForm>

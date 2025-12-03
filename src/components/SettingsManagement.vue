@@ -7,6 +7,8 @@
                 <v-btn @click="emit('addNew')" color="primary">Add New</v-btn>
                 <v-text-field v-model="filterString" density="compact" label="Filter" clearable class="mt-4 mr-2"></v-text-field>                      
                 <v-virtual-scroll
+                    id="settings-management-virtual-scroll"
+                    ref="settingsManagementVirtualScroll"
                     :items="items"
                     style="height: 82vh">
                     <template v-slot:default="{item}">
@@ -49,6 +51,7 @@
         </v-row>
 </template> 
 <script lang="ts" setup>
+import type { VVirtualScroll } from 'vuetify/components';
 
 const selectedItem = defineModel<any | null>("selectedItem");
 const filterString = defineModel<string>("filterString");
@@ -57,6 +60,7 @@ const props = defineProps<{
     isLoading?: boolean,
     isNewItem: boolean,
     itemTitle: string,
+    selectedItemId: number | null
 }>();
 const emit = defineEmits<{
     (e: 'addNew'): void
@@ -67,6 +71,46 @@ const emit = defineEmits<{
 }>();
 
 const selectedTab = ref("general");
+const settingsManagementVirtualScroll = ref<VVirtualScroll | null>(null);
+
+watch(() => props.selectedItemId, (newValue, oldValue) => {
+    if (oldValue) removeActive();
+    if (newValue) setActiveTransaction(newValue);
+})
+
+watch(filterString, () => removeActive());
+
+function removeActive(): void {
+ const parentEle = document.getElementById("settings-management-virtual-scroll");
+  
+  if (parentEle) {
+    const childEle = parentEle.querySelectorAll('[id^="settings-management-"]');
+    childEle.forEach(x => x.classList.remove("bg-grey-darken-3"));
+  }
+}
+
+function setActiveTransaction(id: number, index: number = 1): void {
+    
+  const parentEle = document.getElementById("settings-management-virtual-scroll");
+  
+  if (parentEle) {
+        const childEle = parentEle.querySelector("#settings-management-" + id.toString());
+
+        if (childEle) {
+            childEle.classList.add('bg-grey-darken-3');
+            
+        } else {
+            if (index <= props.items.length) {
+                setTimeout(() => scrollIntoView(id, index + 1), 10);
+            }
+        }
+  }
+}
+
+function scrollIntoView(id: number, index: number) {
+    settingsManagementVirtualScroll.value?.scrollToIndex(index);
+    setActiveTransaction(id, index);
+}
 
 </script>
 <style scoped>

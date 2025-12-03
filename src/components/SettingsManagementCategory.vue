@@ -5,6 +5,7 @@
         :items="filteredCategories"
         :is-loading="isSaving"
         :is-new-item="!selectedCategory?.pk"
+        :selected-item-id="selectedCategory?.pk ?? null"
         item-title="Category"
         @save="saveCategory"
         @delete="deleteCategory"
@@ -14,6 +15,7 @@
         >
         <template #list-item="item">
             <v-list-item 
+                :id="`settings-management-${item.pk}`"
                  @click="selectedCategory = item"
                 :class="item.ignore ? 'text-disabled' : ''"
                 :title="item.name"

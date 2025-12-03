@@ -76,13 +76,27 @@
           title="Spending by Category"
           subtitle="For this year">
           <template v-slot:append>
-            <v-radio-group 
-              v-model="selectedSpendingByCategoryChartType"
-              inline 
-              density="compact">
-              <v-radio label="Donut" :value="0"></v-radio>
-              <v-radio label="Treemap" :value="1"></v-radio>
-            </v-radio-group>
+             <v-menu>
+                    <template v-slot:activator="{ props }">
+                        <v-icon
+                            icon="mdi-dots-vertical"
+                            v-bind="props"
+                        >                                            
+                        </v-icon>
+                    </template>
+                    <v-card color="secondary-darken-1">
+                      <v-card-text>
+                        <div class="text-overline">Chart Type</div>
+                        <v-radio-group 
+                          v-model="selectedSpendingByCategoryChartType"
+                          density="compact">
+                          <v-radio label="Donut" :value="0"></v-radio>
+                          <v-radio label="Treemap" :value="1"></v-radio>
+                        </v-radio-group>
+                      </v-card-text>
+                    </v-card>
+                </v-menu>
+           
             
           </template>          
           <v-card-text>
@@ -114,8 +128,29 @@
         <v-row>
           <v-col>
             <v-card title="Fast approaching budgets">
-
+              <template v-slot:append>
+                  <v-menu>
+                    <template v-slot:activator="{ props }">
+                        <v-icon
+                            icon="mdi-dots-vertical"
+                            v-bind="props"
+                        >                                            
+                        </v-icon>
+                    </template>
+                    <v-card color="secondary-darken-1">
+                      <v-card-text>
+                        <div class="text-overline">Budget Type</div>
+                        <v-radio-group v-model="budgetTypeFilter" density="compact">
+                          <v-radio label="All" :value="null"></v-radio>
+                          <v-radio label="Monthly" :value="BudgetTypeEnum.Monthly.value"></v-radio>
+                          <v-radio label="Yearly" :value="BudgetTypeEnum.Yearly.value"></v-radio>
+                        </v-radio-group>
+                      </v-card-text>
+                    </v-card>
+                </v-menu>
+              </template>
               <v-list max-height="600">
+
                 <v-list-item v-for="budget in sortedBudgets" :key="budget.pk!">
                   <template v-slot:prepend>
                     <v-progress-circular 
@@ -162,7 +197,7 @@ import StatisticsService from '@/data/services/StatisticsService';
 import { useSpendingDonutChart } from '@/composables/charts/SpendingDonutChartComposable';
 import { useSpendingAreaChart } from '@/composables/charts/SpendingAreaChartComposable';
 import { useSpendingTreemapChart } from '@/composables/charts/SpendingTreemapChartComposable';
-import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
+import { castToNumber, formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 import { aggregateCategoryMonthTotals } from '@/utilities/CategoryMonthAggregator';
 import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 import { getCurrentYear } from '@/utilities/DateArithmeticUtility';
@@ -181,6 +216,7 @@ const categoryMonthTotals = ref<CategoryMonthTotal[]>([]);
 const selectedSpendingByCategoryChartType = ref(0);
 const uncategorizedTransactions = ref<TransactionSearch[]>([]);
 const budgets = ref<BudgetModel[]>([]);
+const budgetTypeFilter = ref<number | null>(null);
 
 const yearMonthMapFilter = computed<YearMonthAggregatorFilter>(() => {
    return {    
@@ -217,9 +253,11 @@ onMounted(async () => {
     budgets.value = (await new BudgetService().getMultiple().then(data => data.map(x => new BudgetModel(x))))
   ]);
   budgets.value.forEach(async x => await x.setStatistics());
+  budgetTypeFilter.value = localStorage.getItem("budgetTypeFilter") === null ? null : castToNumber(localStorage.getItem("budgetTypeFilter")!);
 })
 
-const sortedBudgets = computed(() => (budgets.value.length > 5 ? budgets.value.sort((a, b) => a.remaining - b.remaining).slice(0, 5) : budgets.value));
+const filteredBudgets = computed(() => budgets.value.filter(x => x.type === (budgetTypeFilter.value !== null ? budgetTypeFilter.value : x.type)));
+const sortedBudgets = computed(() => (filteredBudgets.value.length > 5 ? filteredBudgets.value.sort((a, b) => a.remaining - b.remaining).slice(0, 5) : filteredBudgets.value));
 
 const spendingByCategoryTableData = computed(() => {
     return aggregatedCategories.value.map(x => {return {name: x.name, total: formatNumber(x.total, NumberFormats.Price)}});
@@ -236,5 +274,13 @@ function categoryClicked(category: AggregatedCategory) {
         toDate: createDate(selectedCurrentYear.value, 11, 31, DateFormats.ISO), 
     }});
 }
+
+watch(budgetTypeFilter, () => {
+  if (budgetTypeFilter.value === null) {
+    localStorage.removeItem("budgetTypeFilter");
+  } else {
+    localStorage.setItem("budgetTypeFilter", budgetTypeFilter.value.toString());
+  }
+})
 
 </script>

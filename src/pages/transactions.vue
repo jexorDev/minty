@@ -427,10 +427,14 @@ async function refresh(): Promise<void> {
 async function exportData(): Promise<void> {
   const file = await new GenericService("search").withRouteParameter("export")
      .withUrlParameters({
-            fromDate: fromDate.value,
-            toDate: toDate.value,
+            fromDate: dateFilterType.value === TransactionDateFilterTypeEnum.AllDates.value ? null : fromDate.value,
+            toDate: dateFilterType.value === TransactionDateFilterTypeEnum.AllDates.value ? null : toDate.value,
             includeIgnoredCategories: includeIgnoredCategories.value,
-            uncategorizedTransactionsOnly: uncategorizedTransactionsOnly.value
+            categoryId: filterCategoryId.value,
+            merchantId: filterMerchantId.value,
+            accountId: filterAccountId.value,
+            uncategorizedTransactionsOnly: uncategorizedTransactionsOnly.value,
+            fileId: fileId
           }).getFile();
   const link = document.createElement("a");
   link.href = URL.createObjectURL(file);

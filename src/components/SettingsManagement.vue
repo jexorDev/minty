@@ -75,7 +75,7 @@ const settingsManagementVirtualScroll = ref<VVirtualScroll | null>(null);
 
 watch(() => props.selectedItemId, (newValue, oldValue) => {
     if (oldValue) removeActive();
-    if (newValue) setActiveTransaction(newValue);
+    if (newValue) setActiveRow(newValue);
 })
 
 watch(filterString, () => removeActive());
@@ -89,7 +89,7 @@ function removeActive(): void {
   }
 }
 
-function setActiveTransaction(id: number, index: number = 1): void {
+function setActiveRow(id: number, index: number = 1): void {
     
   const parentEle = document.getElementById("settings-management-virtual-scroll");
   
@@ -101,7 +101,7 @@ function setActiveTransaction(id: number, index: number = 1): void {
             
         } else {
             if (index <= props.items.length) {
-                setTimeout(() => scrollIntoView(id, index + 1), 10);
+                scrollIntoView(id, index + 1);
             }
         }
   }
@@ -109,7 +109,7 @@ function setActiveTransaction(id: number, index: number = 1): void {
 
 function scrollIntoView(id: number, index: number) {
     settingsManagementVirtualScroll.value?.scrollToIndex(index);
-    setActiveTransaction(id, index);
+    setTimeout(() => setActiveRow(id, index), 10);
 }
 
 </script>

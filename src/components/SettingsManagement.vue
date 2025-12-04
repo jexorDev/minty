@@ -73,52 +73,44 @@ const selectedTab = ref("general");
 const settingsManagementVirtualScroll = ref<any | null>(null);
 
 watch(() => selectedItem.value, (newValue, oldValue) => {
-    if (oldValue) removeActive(oldValue.pk);
-    if (newValue) {
-        scrollToRow(newValue.pk);
-        setActive(newValue.pk);
-    };
-})
+    if (oldValue) setActive(oldValue.pk, false);
+    if (newValue) setActive(newValue.pk);
+});
 
-function removeActive(pk: number): void {
-    const activeRow = getRow(pk);
-    
-    if (activeRow) {
-        activeRow.classList.remove("bg-grey-darken-3");
-    }
-}
-
-function scrollToRow(pk: number) {
-    const activeRow = getRow(pk);
-
-    if (activeRow === null) {
-        const item = props.items.find(x => x.pk === pk);
-        if (item) {
-            const index = props.items.indexOf(item);
-            settingsManagementVirtualScroll.value?.scrollToIndex(index);
-        }
-    }
-}
-
-function getRow(pk: number): HTMLElement | null {
+function setActive(pk: number, isActive: boolean = true): void {
+  
+  const item = props.items.find(x => x.pk === pk);
+  
+  if (item) {
+    let activeRow: HTMLElement | null = null;
     const parentElement = document.getElementById("settings-management-virtual-scroll");
-    let childElement: HTMLElement | null = null;
 
-    if (parentElement) {
-        childElement = parentElement.querySelector("#settings-management-" + pk.toString());
-    }
+    if (parentElement && parentElement.querySelectorAll("[id^=settings-management-]").length > 0) {      
+      activeRow = parentElement.querySelector("#settings-management-" + pk.toString());
 
-    return childElement;
-}
+      if (activeRow === null) {
+        // transactions are rendered, but row is not visible
+        // scroll into view, then try to reselect
+        const index = props.items.indexOf(item);
+        settingsManagementVirtualScroll.value?.scrollToIndex(index);
 
-function setActive(pk: number): void {
-    const activeRow = getRow(pk);
-
-    if (activeRow) {
-        activeRow.classList.add('bg-grey-darken-3');            
-    } else {
+        console.log("Waiting for row to scroll into view...");
         setTimeout(() => setActive(pk), 10);
-    }
+
+      } else {
+        console.log("Row found. Setting to active.");
+        if (isActive) {
+            activeRow.classList.add('bg-grey-darken-3');            
+        } else {
+            activeRow.classList.remove('bg-grey-darken-3');            
+        }
+      }    
+    } else {
+      // transactions not rendered to dom yet, give time to render
+      console.log("Waiting for render to complete...");
+      setTimeout(() => setActive(pk), 10);
+    }    
+  }    
 }
 
 </script>

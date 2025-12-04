@@ -241,7 +241,7 @@
     :tags="tags"
     @refresh="refresh"
   ></TransactionAddForm>
-  <FileUploadDialog v-model="showUploadDialog" @refresh="getData"></FileUploadDialog>
+  <FileUploadDialog v-model="showUploadDialog" @refresh="getData(0)"></FileUploadDialog>
     
 </template>
   
@@ -331,7 +331,7 @@ import type { VVirtualScroll } from 'vuetify/components';
     }
 
     Promise.all([
-      await getData(),
+      await getData(0),
       tags.value = await new TagService().getMultiple()
     ]);
     
@@ -344,7 +344,7 @@ import type { VVirtualScroll } from 'vuetify/components';
   const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(filteredTransactions, filterCategoryId)
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingFromTransactionsDonutChart(aggregatedCategories);
   
-  async function getData(): Promise<void> {
+  async function getData(timerAmount: number = 2000): Promise<void> {
 
     isLoading.value = true;
 
@@ -369,19 +369,36 @@ import type { VVirtualScroll } from 'vuetify/components';
           }).getMultiple();           
         } finally {
           isLoading.value = false;
-          if (selectedTransaction.value) {            
-            setActive(selectedTransaction.value.pk);
+          if (selectedTransaction.value) {    
+            setActive(getPk(selectedTransaction.value));
           }
         }
-      }, 2000);
+      }, timerAmount);
 }  
 
-function setActive(pk: number): void {
-  
-  const item = filteredTransactions.value.find(x => x.pk === pk);
-  let activeRow: HTMLElement | null = null;
+function getPk(selectedTransaction: TransactionSearch): number {
+  console.log(selectedTransaction)
+  let pk: number | null = null;
 
+  // handle if transaction was split
+  let item = transactions.value.find(x => x.splitId === selectedTransaction.pk);
+  if (item) pk = item.pk;
+  
+  // handle if transaction had all splits deleted
+  if (pk === null && selectedTransaction.splitId) {
+    item = transactions.value.find(x => x.pk === selectedTransaction.splitId);
+    if (item) pk = selectedTransaction.splitId;
+  }
+  
+  return pk ?? selectedTransaction.pk;
+}
+
+function setActive(pk: number): void {
+  console.log(pk)
+  const item = filteredTransactions.value.find(x => x.pk === pk);
+  
   if (item) {
+    let activeRow: HTMLElement | null = null;
     const parentElement = document.getElementById("transactions-container");
 
     if (parentElement && parentElement.querySelectorAll("[id^=transaction-]").length > 0) {      
@@ -394,7 +411,7 @@ function setActive(pk: number): void {
         transactionVirtualScroll.value?.scrollToIndex(index);
 
         console.log("Waiting for row to scroll into view...");
-        setTimeout(() => setActive(pk), 600);
+        setTimeout(() => setActive(pk), 10);
 
       } else {
         console.log("Row found. Setting to active.");
@@ -403,14 +420,14 @@ function setActive(pk: number): void {
     } else {
       // transactions not rendered to dom yet, give time to render
       console.log("Waiting for render to complete...");
-      setTimeout(() => setActive(pk), 600);
+      setTimeout(() => setActive(pk), 10);
     }    
   }    
 }
 
 async function refresh(): Promise<void> {
   Promise.all([
-    await getData(),
+    await getData(0),
     tags.value = await new TagService().getMultiple()
   ])
 }

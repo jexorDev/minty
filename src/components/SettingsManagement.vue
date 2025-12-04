@@ -11,7 +11,7 @@
                     ref="settingsManagementVirtualScroll"
                     :items="items"
                     style="height: 82vh">
-                    <template v-slot:default="{item}">
+                    <template v-slot:default="{item}">                
                         <slot name="list-item" v-bind="item"></slot>
                     </template>
                 </v-virtual-scroll>                
@@ -59,8 +59,7 @@ const props = defineProps<{
     items: any[],
     isLoading?: boolean,
     isNewItem: boolean,
-    itemTitle: string,
-    selectedItemId: number | null
+    itemTitle: string
 }>();
 const emit = defineEmits<{
     (e: 'addNew'): void
@@ -71,45 +70,55 @@ const emit = defineEmits<{
 }>();
 
 const selectedTab = ref("general");
-const settingsManagementVirtualScroll = ref<VVirtualScroll | null>(null);
+const settingsManagementVirtualScroll = ref<any | null>(null);
 
-watch(() => props.selectedItemId, (newValue, oldValue) => {
-    if (oldValue) removeActive();
-    if (newValue) setActiveRow(newValue);
+watch(() => selectedItem.value, (newValue, oldValue) => {
+    if (oldValue) removeActive(oldValue.pk);
+    if (newValue) {
+        scrollToRow(newValue.pk);
+        setActive(newValue.pk);
+    };
 })
 
-watch(filterString, () => removeActive());
-
-function removeActive(): void {
- const parentEle = document.getElementById("settings-management-virtual-scroll");
-  
-  if (parentEle) {
-    const childEle = parentEle.querySelectorAll('[id^="settings-management-"]');
-    childEle.forEach(x => x.classList.remove("bg-grey-darken-3"));
-  }
-}
-
-function setActiveRow(id: number, index: number = 1): void {
+function removeActive(pk: number): void {
+    const activeRow = getRow(pk);
     
-  const parentEle = document.getElementById("settings-management-virtual-scroll");
-  
-  if (parentEle) {
-        const childEle = parentEle.querySelector("#settings-management-" + id.toString());
-
-        if (childEle) {
-            childEle.classList.add('bg-grey-darken-3');
-            
-        } else {
-            if (index <= props.items.length) {
-                scrollIntoView(id, index + 1);
-            }
-        }
-  }
+    if (activeRow) {
+        activeRow.classList.remove("bg-grey-darken-3");
+    }
 }
 
-function scrollIntoView(id: number, index: number) {
-    settingsManagementVirtualScroll.value?.scrollToIndex(index);
-    setTimeout(() => setActiveRow(id, index), 10);
+function scrollToRow(pk: number) {
+    const activeRow = getRow(pk);
+
+    if (activeRow === null) {
+        const item = props.items.find(x => x.pk === pk);
+        if (item) {
+            const index = props.items.indexOf(item);
+            settingsManagementVirtualScroll.value?.scrollToIndex(index);
+        }
+    }
+}
+
+function getRow(pk: number): HTMLElement | null {
+    const parentElement = document.getElementById("settings-management-virtual-scroll");
+    let childElement: HTMLElement | null = null;
+
+    if (parentElement) {
+        childElement = parentElement.querySelector("#settings-management-" + pk.toString());
+    }
+
+    return childElement;
+}
+
+function setActive(pk: number): void {
+    const activeRow = getRow(pk);
+
+    if (activeRow) {
+        activeRow.classList.add('bg-grey-darken-3');            
+    } else {
+        setTimeout(() => setActive(pk), 10);
+    }
 }
 
 </script>

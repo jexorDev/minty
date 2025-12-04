@@ -1,6 +1,5 @@
 <template>
     <v-list-item   
-      :id="props.transaction.pk" 
       @click="emits('selectedTransactionChanged', transaction)"
       :class="props.transaction.categoryIgnore ? 'text-disabled' : ''">
       <template v-slot:prepend>

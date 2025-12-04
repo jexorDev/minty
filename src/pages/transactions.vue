@@ -204,11 +204,16 @@
   </v-toolbar>
   <v-row no-gutters>
     <v-col cols="12" md="8">
-      <div :class="$vuetify.display.mobile ? '' : 'scroll'">
         <v-empty-state v-if=isLoading>
           <v-progress-circular indeterminate size="x-large" color="secondary" :width="7"></v-progress-circular>
         </v-empty-state>
+         <v-empty-state
+            v-if="!isLoading && filteredTransactions.length === 0"                            
+            title="No results"
+            text="Try a different search criteria"  
+        ></v-empty-state>
         <v-virtual-scroll
+          v-if="!isLoading"
           id="transactions-container"
           ref="transactionVirtualScroll"
           :items="filteredTransactions"
@@ -218,12 +223,7 @@
             <TransactionsListItem :id="`transaction-${item.pk}`" :transaction="item" @selected-transaction-changed="setTransactionToEdit"></TransactionsListItem>
           </template>
         </v-virtual-scroll>
-         <v-empty-state
-            v-if="!isLoading && filteredTransactions.length === 0"                            
-            title="No results"
-            text="Try a different search criteria"  
-        ></v-empty-state>
-      </div>
+        
     </v-col>
     <v-col cols="12" md="4">
       <v-card>
@@ -346,8 +346,9 @@ import type { VVirtualScroll } from 'vuetify/components';
   
   async function getData(): Promise<void> {
 
+    isLoading.value = true;
+
     if (mainSearchTimer) {
-      isLoading.value = true;
       clearTimeout(mainSearchTimer);
     }
     
@@ -368,53 +369,43 @@ import type { VVirtualScroll } from 'vuetify/components';
           }).getMultiple();           
         } finally {
           isLoading.value = false;
-
-          if (selectedTransaction.value) {
-            const x = transactions.value.find(x => x.pk === selectedTransaction.value!.pk)
-            if (x) {
-              const index = filteredTransactions.value.indexOf(x);
-              scrollIntoView("#transaction-" + filteredTransactions.value[0].pk, index);
-            }
+          if (selectedTransaction.value) {            
+            setActive(selectedTransaction.value.pk);
           }
         }
       }, 2000);
 }  
 
-function scrollIntoView(firstItemId: string, indexToScrollTo: number): void {
-   const parentEle = document.getElementById("transactions-container");
+function setActive(pk: number): void {
   
-  if (parentEle) {
-    const childEle = parentEle.querySelectorAll('[id^="transaction-"]');
-    console.log(childEle)
-    if (childEle.length > 0) {
-      transactionVirtualScroll.value!.scrollToIndex(indexToScrollTo);
-      console.log('scrolling')
-      setActiveTransaction();
-      
-    } else {
-      console.log('waiting to scroll')
-      setTimeout(() => scrollIntoView(firstItemId, indexToScrollTo), 600);
-    }
-      
-  }
-}
+  const item = filteredTransactions.value.find(x => x.pk === pk);
+  let activeRow: HTMLElement | null = null;
 
-function setActiveTransaction(): void {
-  console.log('attempting to set active transaction')
-  const parentEle = document.getElementById("transactions-container");
-  
-  if (parentEle) {
-    const childEle = parentEle.querySelector("#transaction-" + selectedTransaction.value!.pk.toString());
+  if (item) {
+    const parentElement = document.getElementById("transactions-container");
 
-    if (childEle) {
-      childEle.classList.add('bg-grey-darken-3');
-      console.log('active transaction set')
+    if (parentElement && parentElement.querySelectorAll("[id^=transaction-]").length > 0) {      
+      activeRow = parentElement.querySelector("#transaction-" + pk.toString());
+
+      if (activeRow === null) {
+        // transactions are rendered, but row is not visible
+        // scroll into view, then try to reselect
+        const index = filteredTransactions.value.indexOf(item);
+        transactionVirtualScroll.value?.scrollToIndex(index);
+
+        console.log("Waiting for row to scroll into view...");
+        setTimeout(() => setActive(pk), 600);
+
+      } else {
+        console.log("Row found. Setting to active.");
+        activeRow.classList.add('bg-grey-darken-3');            
+      }    
     } else {
-      console.log('waiting to set active transaction')
-      setTimeout(() => setActiveTransaction(), 600);
-    }
-      
-  }
+      // transactions not rendered to dom yet, give time to render
+      console.log("Waiting for render to complete...");
+      setTimeout(() => setActive(pk), 600);
+    }    
+  }    
 }
 
 async function refresh(): Promise<void> {

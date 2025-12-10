@@ -111,7 +111,9 @@
           <v-col cols="12" md="6">
             <v-card color="secondary-darken-1">
               <v-card-title>
-                Uncategorized Transactions
+                <div class="text-caption">
+                  Uncategorized Transactions
+                </div>
               </v-card-title>
               <v-card-text>
                 <div class="text-h1 d-flex justify-center">{{ uncategorizedTransactions.length }}</div>
@@ -122,7 +124,9 @@
             </v-card>
 
           </v-col>
-          <v-col cols="12" md="6"></v-col>
+          <v-col cols="12" md="6">
+            <MonthComparisonWidget :categoryMonthTotals="categoryMonthTotals"></MonthComparisonWidget>
+          </v-col>
 
         </v-row>
         <v-row>

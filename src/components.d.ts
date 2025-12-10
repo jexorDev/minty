@@ -18,6 +18,7 @@ declare module 'vue' {
     FileUploadDialog: typeof import('./components/FileUploadDialog.vue')['default']
     ImportedFiles: typeof import('./components/ImportedFiles.vue')['default']
     MerchantAddEditForm: typeof import('./components/MerchantAddEditForm.vue')['default']
+    MonthComparisonWidget: typeof import('./components/MonthComparisonWidget.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SettingsManagement: typeof import('./components/SettingsManagement.vue')['default']

@@ -11,7 +11,7 @@
                     ref="settingsManagementVirtualScroll"
                     :items="items"
                     style="height: 82vh">
-                    <template v-slot:default="{item}">                
+                    <template v-slot:default="{item}">
                         <slot name="list-item" v-bind="item"></slot>
                     </template>
                 </v-virtual-scroll>                
@@ -59,7 +59,8 @@ const props = defineProps<{
     items: any[],
     isLoading?: boolean,
     isNewItem: boolean,
-    itemTitle: string
+    itemTitle: string,
+    selectedItemId: number | null
 }>();
 const emit = defineEmits<{
     (e: 'addNew'): void
@@ -70,47 +71,45 @@ const emit = defineEmits<{
 }>();
 
 const selectedTab = ref("general");
-const settingsManagementVirtualScroll = ref<any | null>(null);
+const settingsManagementVirtualScroll = ref<VVirtualScroll | null>(null);
 
-watch(() => selectedItem.value, (newValue, oldValue) => {
-    if (oldValue) setActive(oldValue.pk, false);
-    if (newValue) setActive(newValue.pk);
-});
+watch(() => props.selectedItemId, (newValue, oldValue) => {
+    if (oldValue) removeActive();
+    if (newValue) setActiveRow(newValue);
+})
 
-function setActive(pk: number, isActive: boolean = true): void {
+watch(filterString, () => removeActive());
+
+function removeActive(): void {
+ const parentEle = document.getElementById("settings-management-virtual-scroll");
   
-  const item = props.items.find(x => x.pk === pk);
+  if (parentEle) {
+    const childEle = parentEle.querySelectorAll('[id^="settings-management-"]');
+    childEle.forEach(x => x.classList.remove("bg-grey-darken-3"));
+  }
+}
+
+function setActiveRow(id: number, index: number = 1): void {
+    
+  const parentEle = document.getElementById("settings-management-virtual-scroll");
   
-  if (item) {
-    let activeRow: HTMLElement | null = null;
-    const parentElement = document.getElementById("settings-management-virtual-scroll");
+  if (parentEle) {
+        const childEle = parentEle.querySelector("#settings-management-" + id.toString());
 
-    if (parentElement && parentElement.querySelectorAll("[id^=settings-management-]").length > 0) {      
-      activeRow = parentElement.querySelector("#settings-management-" + pk.toString());
-
-      if (activeRow === null) {
-        // transactions are rendered, but row is not visible
-        // scroll into view, then try to reselect
-        const index = props.items.indexOf(item);
-        settingsManagementVirtualScroll.value?.scrollToIndex(index);
-
-        console.log("Waiting for row to scroll into view...");
-        setTimeout(() => setActive(pk), 10);
-
-      } else {
-        console.log("Row found. Setting to active.");
-        if (isActive) {
-            activeRow.classList.add('bg-grey-darken-3');            
+        if (childEle) {
+            childEle.classList.add('bg-grey-darken-3');
+            
         } else {
-            activeRow.classList.remove('bg-grey-darken-3');            
+            if (index <= props.items.length) {
+                scrollIntoView(id, index + 1);
+            }
         }
-      }    
-    } else {
-      // transactions not rendered to dom yet, give time to render
-      console.log("Waiting for render to complete...");
-      setTimeout(() => setActive(pk), 10);
-    }    
-  }    
+  }
+}
+
+function scrollIntoView(id: number, index: number) {
+    settingsManagementVirtualScroll.value?.scrollToIndex(index);
+    setTimeout(() => setActiveRow(id, index), 10);
 }
 
 </script>

@@ -7,7 +7,7 @@ export function useBarChart(labels: string[], isLineChart: Ref<boolean>, segment
         return {
             chart: {
                 type: toValue(isLineChart) ? 'line' : 'bar',
-                stacked: true,
+                stacked: false,
                 toolbar: {
                     show: false
                 },

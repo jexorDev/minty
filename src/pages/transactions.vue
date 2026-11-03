@@ -11,6 +11,10 @@
       <v-list-item v-if="fileId">
         <v-chip label closable @click:close="fileId = null">File ID: {{ fileId }}</v-chip>
       </v-list-item>
+      <v-list-item v-if="filterSearchString">
+        <v-chip label closable @click:close="filterSearchString = ''">Search: {{ filterSearchString }}</v-chip>
+      </v-list-item>
+
       <v-list-item subtitle="Dates">
         <v-radio-group v-model="dateFilterType" density="compact">
           <v-radio v-for="item in TransactionDateFilterTypeEnum.getItems()" :value="item.value" :label="item.description"></v-radio>
@@ -169,7 +173,7 @@
       v-model:search="searchString"
       :loading="isQuickSearchLoading"
       @update:search="searchUpdate"
-      @update:focused="quickSearchFocusChanged"
+      :clearable="true"
       placeholder="Quick Search"
       max-width="500"
       density="compact"
@@ -177,18 +181,24 @@
       class="mt-5"
       item-value="pk"
       item-title="description"
-      hide-no-data      
+      :hide-no-data="!isQuickSearchLoading && searchString.length === 0"
       :items="quickSearchTransactions">
       <template v-slot:item="{props, item}">
+
         <TransactionsListItem 
           :transaction="item.raw" 
           @selected-transaction-changed="setTransactionToEdit">
-        </TransactionsListItem>
+        </TransactionsListItem>        
       </template>
-         <template v-slot:append>
-            <v-chip v-if="!isQuickSearchLoading && searchString.length > 0" label >{{ resultCount }} results</v-chip>
-            <v-progress-circular v-if="isQuickSearchLoading" indeterminate></v-progress-circular>
-        </template>
+      <template v-slot:append>          
+          <v-progress-circular v-if="isQuickSearchLoading" indeterminate></v-progress-circular>
+        </template>        
+        <template v-slot:menu-footer>
+          <div  class="d-flex justify-space-between pa-2 border-t">
+            <v-chip label color="secondary">{{ resultCount }} results</v-chip>
+            <v-btn text="View All" variant="tonal" append-icon="mdi-open-in-new" @click="viewAllFiltered()" size="small" color="primary"></v-btn>
+        </div>
+      </template>
     </v-autocomplete>
   
     <template v-slot:append>      
@@ -204,16 +214,11 @@
   </v-toolbar>
   <v-row no-gutters>
     <v-col cols="12" md="8">
+      <div :class="$vuetify.display.mobile ? '' : 'scroll'">
         <v-empty-state v-if=isLoading>
           <v-progress-circular indeterminate size="x-large" color="secondary" :width="7"></v-progress-circular>
         </v-empty-state>
-         <v-empty-state
-            v-if="!isLoading && filteredTransactions.length === 0"                            
-            title="No results"
-            text="Try a different search criteria"  
-        ></v-empty-state>
         <v-virtual-scroll
-          v-if="!isLoading"
           id="transactions-container"
           ref="transactionVirtualScroll"
           :items="filteredTransactions"
@@ -223,7 +228,12 @@
             <TransactionsListItem :id="`transaction-${item.pk}`" :transaction="item" @selected-transaction-changed="setTransactionToEdit"></TransactionsListItem>
           </template>
         </v-virtual-scroll>
-        
+         <v-empty-state
+            v-if="!isLoading && filteredTransactions.length === 0"                            
+            title="No results"
+            text="Try a different search criteria"  
+        ></v-empty-state>
+      </div>
     </v-col>
     <v-col cols="12" md="4">
       <v-card>
@@ -241,7 +251,7 @@
     :tags="tags"
     @refresh="refresh"
   ></TransactionAddForm>
-  <FileUploadDialog v-model="showUploadDialog" @refresh="getData(0)"></FileUploadDialog>
+  <FileUploadDialog v-model="showUploadDialog" @refresh="getData"></FileUploadDialog>
     
 </template>
   
@@ -285,6 +295,7 @@ import type { VVirtualScroll } from 'vuetify/components';
   const includeIgnoredCategories = ref(true);
   const uncategorizedTransactionsOnly = ref(false);
   const searchString = ref("");
+  const filterSearchString = ref("");
   const isLoading = ref(false);
   const isQuickSearchLoading = ref(false);
   const isQuickSearchFocused = ref(false);
@@ -331,7 +342,7 @@ import type { VVirtualScroll } from 'vuetify/components';
     }
 
     Promise.all([
-      await getData(0),
+      await getData(),
       tags.value = await new TagService().getMultiple()
     ]);
     
@@ -344,11 +355,10 @@ import type { VVirtualScroll } from 'vuetify/components';
   const {aggregatedCategories} = useCategoryAggregatorTransactionSearch(filteredTransactions, filterCategoryId)
   const {options: spendingDonutChartOptions, series: spendingDonutChartSeries} = useSpendingFromTransactionsDonutChart(aggregatedCategories);
   
-  async function getData(timerAmount: number = 2000): Promise<void> {
-
-    isLoading.value = true;
+  async function getData(): Promise<void> {
 
     if (mainSearchTimer) {
+      isLoading.value = true;
       clearTimeout(mainSearchTimer);
     }
     
@@ -369,65 +379,58 @@ import type { VVirtualScroll } from 'vuetify/components';
           }).getMultiple();           
         } finally {
           isLoading.value = false;
-          if (selectedTransaction.value) {    
-            setActive(getPk(selectedTransaction.value));
+
+          if (selectedTransaction.value) {
+            const x = transactions.value.find(x => x.pk === selectedTransaction.value!.pk)
+            if (x) {
+              const index = filteredTransactions.value.indexOf(x);
+              scrollIntoView("#transaction-" + filteredTransactions.value[0].pk, index);
+            }
           }
         }
-      }, timerAmount);
+      }, 2000);
 }  
 
-function getPk(selectedTransaction: TransactionSearch): number {
-  console.log(selectedTransaction)
-  let pk: number | null = null;
-
-  // handle if transaction was split
-  let item = transactions.value.find(x => x.splitId === selectedTransaction.pk);
-  if (item) pk = item.pk;
+function scrollIntoView(firstItemId: string, indexToScrollTo: number): void {
+   const parentEle = document.getElementById("transactions-container");
   
-  // handle if transaction had all splits deleted
-  if (pk === null && selectedTransaction.splitId) {
-    item = transactions.value.find(x => x.pk === selectedTransaction.splitId);
-    if (item) pk = selectedTransaction.splitId;
+  if (parentEle) {
+    const childEle = parentEle.querySelectorAll('[id^="transaction-"]');
+    console.log(childEle)
+    if (childEle.length > 0) {
+      transactionVirtualScroll.value!.scrollToIndex(indexToScrollTo);
+      console.log('scrolling')
+      setActiveTransaction();
+      
+    } else {
+      console.log('waiting to scroll')
+      setTimeout(() => scrollIntoView(firstItemId, indexToScrollTo), 600);
+    }
+      
   }
-  
-  return pk ?? selectedTransaction.pk;
 }
 
-function setActive(pk: number): void {
-  console.log(pk)
-  const item = filteredTransactions.value.find(x => x.pk === pk);
+function setActiveTransaction(): void {
+  console.log('attempting to set active transaction')
+  const parentEle = document.getElementById("transactions-container");
   
-  if (item) {
-    let activeRow: HTMLElement | null = null;
-    const parentElement = document.getElementById("transactions-container");
+  if (parentEle) {
+    const childEle = parentEle.querySelector("#transaction-" + selectedTransaction.value!.pk.toString());
 
-    if (parentElement && parentElement.querySelectorAll("[id^=transaction-]").length > 0) {      
-      activeRow = parentElement.querySelector("#transaction-" + pk.toString());
-
-      if (activeRow === null) {
-        // transactions are rendered, but row is not visible
-        // scroll into view, then try to reselect
-        const index = filteredTransactions.value.indexOf(item);
-        transactionVirtualScroll.value?.scrollToIndex(index);
-
-        console.log("Waiting for row to scroll into view...");
-        setTimeout(() => setActive(pk), 10);
-
-      } else {
-        console.log("Row found. Setting to active.");
-        activeRow.classList.add('bg-grey-darken-3');            
-      }    
+    if (childEle) {
+      childEle.classList.add('bg-grey-darken-3');
+      console.log('active transaction set')
     } else {
-      // transactions not rendered to dom yet, give time to render
-      console.log("Waiting for render to complete...");
-      setTimeout(() => setActive(pk), 10);
-    }    
-  }    
+      console.log('waiting to set active transaction')
+      setTimeout(() => setActiveTransaction(), 600);
+    }
+      
+  }
 }
 
 async function refresh(): Promise<void> {
   Promise.all([
-    await getData(0),
+    await getData(),
     tags.value = await new TagService().getMultiple()
   ])
 }
@@ -492,9 +495,11 @@ function setCustomDateRange(yearOffset: number): void {
   customDateRangeTo.value = createDate(currentYear, 11, 31, DateFormats.ISO);
 }
 
-function quickSearchFocusChanged(focused: boolean): void {
-  isQuickSearchFocused.value = focused;
-  quickSearchTransactions.value = [];
+function viewAllFiltered(): void {
+  transactions.value = quickSearchTransactions.value;
+  filterSearchString.value = searchString.value;
+  searchString.value = "";
+
 }
 
 watch(selectedMonth, async () => getData());
@@ -505,6 +510,17 @@ watch(uncategorizedTransactionsOnly, async () => getData());
 watch(includeIgnoredCategories, async () => getData());
 watch(filterMerchantId, async () => getData());
 watch(filterAccountId, async () => getData());
+watch(searchString, () => {
+  if (searchString.value.length === 0) {
+    quickSearchTransactions.value = [];
+  }
+})
+watch(filterSearchString, async () => {
+  if (filterSearchString.value.length === 0) {
+    transactions.value = [];  
+    getData();
+  }
+}); 
 
 </script>
 <style scoped>

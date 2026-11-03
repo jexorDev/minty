@@ -5,6 +5,7 @@
         :items="filteredCategories"
         :is-loading="isSaving"
         :is-new-item="!selectedCategory?.pk"
+        :selected-item-id="selectedCategory?.pk ?? null"
         item-title="Category"
         @save="saveCategory"
         @delete="deleteCategory"

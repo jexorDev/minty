@@ -5,6 +5,7 @@
         :items="filteredMerchants"
         :is-loading="isSaving"
         :is-new-item="!selectedMerchant?.pk"
+        :selected-item-id="selectedMerchant?.pk ?? null"
         item-title="Merchant"
         @save="saveMerchant"
         @add-new="addNewMerchant"   

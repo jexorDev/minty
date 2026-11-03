@@ -298,7 +298,7 @@ const {options: spendingTreemapChartOptions, series: spendingTreemapChartSeries}
 
 function categoryClicked(category: AggregatedCategory) {
     router.push({path: "/transactions", query: {
-        categoryId: category.id,
+        categoryId: filterCategoryId.value ?? category.id,
         merchantId: filterMerchantId.value ?? "",
         accountId: filterAccountId.value ?? "",        
         fromDate: fromDate.value,

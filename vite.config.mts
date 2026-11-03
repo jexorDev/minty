@@ -73,9 +73,8 @@ export default defineConfig({
     port: 3000,  
      proxy: {
       '/mintyapi': {
-        target: 'http://192.168.1.241', // Your backend API URL
+        target: 'http://192.168.1.241', 
         changeOrigin: true,
-        //rewrite: (path) => path.replace(/^\/mintyapi/, ''),
       },
     },  
   },

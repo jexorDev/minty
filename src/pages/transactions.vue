@@ -11,6 +11,10 @@
       <v-list-item v-if="fileId">
         <v-chip label closable @click:close="fileId = null">File ID: {{ fileId }}</v-chip>
       </v-list-item>
+      <v-list-item v-if="filterSearchString">
+        <v-chip label closable @click:close="filterSearchString = ''">Search: {{ filterSearchString }}</v-chip>
+      </v-list-item>
+
       <v-list-item subtitle="Dates">
         <v-radio-group v-model="dateFilterType" density="compact">
           <v-radio v-for="item in TransactionDateFilterTypeEnum.getItems()" :value="item.value" :label="item.description"></v-radio>
@@ -169,7 +173,7 @@
       v-model:search="searchString"
       :loading="isQuickSearchLoading"
       @update:search="searchUpdate"
-      @update:focused="quickSearchFocusChanged"
+      :clearable="true"
       placeholder="Quick Search"
       max-width="500"
       density="compact"
@@ -177,18 +181,24 @@
       class="mt-5"
       item-value="pk"
       item-title="description"
-      hide-no-data      
+      :hide-no-data="!isQuickSearchLoading && searchString.length === 0"
       :items="quickSearchTransactions">
       <template v-slot:item="{props, item}">
+
         <TransactionsListItem 
           :transaction="item.raw" 
           @selected-transaction-changed="setTransactionToEdit">
-        </TransactionsListItem>
+        </TransactionsListItem>        
       </template>
-         <template v-slot:append>
-            <v-chip v-if="!isQuickSearchLoading && searchString.length > 0" label >{{ resultCount }} results</v-chip>
-            <v-progress-circular v-if="isQuickSearchLoading" indeterminate></v-progress-circular>
-        </template>
+      <template v-slot:append>          
+          <v-progress-circular v-if="isQuickSearchLoading" indeterminate></v-progress-circular>
+        </template>        
+        <template v-slot:menu-footer>
+          <div  class="d-flex justify-space-between pa-2 border-t">
+            <v-chip label color="secondary">{{ resultCount }} results</v-chip>
+            <v-btn text="View All" variant="tonal" append-icon="mdi-open-in-new" @click="viewAllFiltered()" size="small" color="primary"></v-btn>
+        </div>
+      </template>
     </v-autocomplete>
   
     <template v-slot:append>      
@@ -285,6 +295,7 @@ import type { VVirtualScroll } from 'vuetify/components';
   const includeIgnoredCategories = ref(true);
   const uncategorizedTransactionsOnly = ref(false);
   const searchString = ref("");
+  const filterSearchString = ref("");
   const isLoading = ref(false);
   const isQuickSearchLoading = ref(false);
   const isQuickSearchFocused = ref(false);
@@ -484,9 +495,11 @@ function setCustomDateRange(yearOffset: number): void {
   customDateRangeTo.value = createDate(currentYear, 11, 31, DateFormats.ISO);
 }
 
-function quickSearchFocusChanged(focused: boolean): void {
-  isQuickSearchFocused.value = focused;
-  quickSearchTransactions.value = [];
+function viewAllFiltered(): void {
+  transactions.value = quickSearchTransactions.value;
+  filterSearchString.value = searchString.value;
+  searchString.value = "";
+
 }
 
 watch(selectedMonth, async () => getData());
@@ -497,6 +510,17 @@ watch(uncategorizedTransactionsOnly, async () => getData());
 watch(includeIgnoredCategories, async () => getData());
 watch(filterMerchantId, async () => getData());
 watch(filterAccountId, async () => getData());
+watch(searchString, () => {
+  if (searchString.value.length === 0) {
+    quickSearchTransactions.value = [];
+  }
+})
+watch(filterSearchString, async () => {
+  if (filterSearchString.value.length === 0) {
+    transactions.value = [];  
+    getData();
+  }
+}); 
 
 </script>
 <style scoped>

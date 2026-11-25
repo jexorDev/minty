@@ -12,7 +12,8 @@ export function getCurrentYear(): number {
 }
 
 export function getCurrentMonth(): number {
-    return dayjs().month();
+    const currentMonth = dayjs().month();
+    return currentMonth === 0 ? 1 : currentMonth;
 }
 
 export function getDaysInMonth(date: DateTypes): number {

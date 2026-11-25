@@ -333,6 +333,10 @@ import type { VVirtualScroll } from 'vuetify/components';
       dateFilterType.value = TransactionDateFilterTypeEnum.CustomRange.value;
     }
 
+    if (router.currentRoute.value.query.month) {
+      selectedMonth.value = castToNumber(router.currentRoute.value.query.month.toString());
+    }
+
     if (router.currentRoute.value.query.uncategorized) {      
       uncategorizedTransactionsOnly.value = true;      
     }

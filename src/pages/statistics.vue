@@ -167,7 +167,7 @@ import type CategoryMonthTotal from '@/data/interfaces/Statistics/CategoryMonthT
 import StatisticsService from '@/data/services/StatisticsService';
 import { useCategoryStore } from '@/stores/CategoryStore';
 import { useUserSettingsStore } from '@/stores/UserSettingsStore';
-import { getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
+import { getCurrentMonth, getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 import { useCategoryAggregator, type AggregatedCategory, type CategoryAggregatorFilter } from '@/composables/data/CategoryAggregator';
 import StatisticsPageViewTypeEnum from '@/data/enumerations/StatisticsPageViewType';
@@ -216,7 +216,7 @@ const incomeTotal = computed<number>(() => {
     }
     return grandTotal;
 });
-const monthlyAverage = computed<number>(() => grandTotal.value / (12 * (selectedComparisonYear.value ?? 1)))
+const monthlyAverage = computed<number>(() => grandTotal.value / (getCurrentMonth() + (12 * (selectedComparisonYear.value ?? 0))))
 const selectedSpendingChartType = ref(ChartTypeEnum.Bar.value);
 const selectedCategoryChartType = ref(ChartTypeEnum.Donut.value);
 

@@ -6,7 +6,7 @@
             </div>
             <div v-if="thisMonthVsLastMonthSpendingDifference < 0" class="text-error text-h6">      
                 <v-icon icon="mdi-menu-up"></v-icon>          
-                {{ Math.abs(thisMonthVsLastMonthSpendingDifference) }} more
+                {{ formatNumber(Math.abs(thisMonthVsLastMonthSpendingDifference)) }} more
             </div>
             <div v-else class="text-success text-h6">
                 <v-icon color="success" size="x-large" icon="mdi-menu-down"></v-icon>          
@@ -18,7 +18,7 @@
             </div>
             <div v-if="thisMonthVsThisMonthLastYearSpendingDifference < 0" class="text-error text-h6">      
                 <v-icon icon="mdi-menu-up"></v-icon>          
-                {{ Math.abs(thisMonthVsThisMonthLastYearSpendingDifference) }} more
+                {{ formatNumber(Math.abs(thisMonthVsThisMonthLastYearSpendingDifference)) }} more
             </div>
             <div v-else class="text-success text-h6">
                 <v-icon color="success" size="x-large" icon="mdi-menu-down"></v-icon>          

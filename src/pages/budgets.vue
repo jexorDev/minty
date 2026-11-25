@@ -13,7 +13,21 @@
             
         </template>     
         <template v-slot:append>
-            <v-btn>test</v-btn> 
+            <v-menu>
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props" append-icon="mdi-sort">Sort</v-btn>
+                    </template>
+                    <v-card color="secondary-darken-1">
+                      <v-card-text>
+            
+                        <v-radio-group 
+                          v-model="selectedSort"
+                          density="compact">
+                          <v-radio v-for="item in BudgetSortEnum.getItems()" :label="item.description" :value="item.value"></v-radio>
+                        </v-radio-group>
+                      </v-card-text>
+                    </v-card>
+                </v-menu>
         </template>  
     </v-toolbar>
     <v-empty-state v-if="budgets.length === 0"
@@ -39,15 +53,19 @@
                 
                 <td>{{ budget.categoryName }}</td>
                 <td>
-                    {{ formatNumber(budget.amount, NumberFormats.Price) }} {{ budget.type === BudgetTypeEnum.Monthly.value ? "per month" : "per year" }}
-                      <v-tooltip>
-                    <template v-slot:activator="{ props: activatorProps }">
-                        <v-icon-btn icon="mdi-information-outline" v-bind="activatorProps"></v-icon-btn>
-                    </template>
-                    <div>
+                    <v-tooltip>
+                        <template v-slot:activator="{ props: activatorProps }">
+                            <v-icon v-if="budget.type === BudgetTypeEnum.Yearly.value" icon="mdi-alpha-a-box" v-bind="activatorProps"></v-icon>
+                            <v-icon v-else-if="budget.type === BudgetTypeEnum.Monthly.value" icon="mdi-alpha-m-box" v-bind="activatorProps"></v-icon>
+                            <v-icon v-else-if="budget.type === BudgetTypeEnum.AnnuallyAccumulated.value" icon="mdi-alpha-c-box" v-bind="activatorProps"></v-icon>
+                            <v-icon v-else icon="mdi-alpha-b-box" v-bind="activatorProps"></v-icon>
+                        
+                        </template>
+                        <div>
                             {{ BudgetTypeEnum.getItemByValue(budget.type)?.description }}
-                    </div>
+                        </div>
                     </v-tooltip>
+                    {{ formatNumber(budget.amount, NumberFormats.Price) }} {{ budget.type === BudgetTypeEnum.Monthly.value ? "per month" : "per year" }}
                 
                 </td>
                 <td>{{ formatNumber(budget.grandTotal, NumberFormats.Price) }}</td>
@@ -68,10 +86,10 @@
                 </v-chip>
                 </td>
                 <td>
-                    <v-icon
+                    <v-btn
                         icon="mdi-pencil"
                         @click="setSelected(budget)">
-                    </v-icon>
+                    </v-btn>
                 </td>
             </tr>
             <tr v-for="budget in nonBudgetedCategories" :key="budget.pk!">
@@ -117,8 +135,16 @@
 
         
 
-    <v-dialog v-if="selectedBudgetForAddEdit" v-model="showAddEditDialog" max-width="600">
-        <v-card :title="selectedBudgetForAddEdit.isNew ? 'Add Budget' : 'Edit Budget'" color="secondary-darken-1">
+    <v-dialog v-if="selectedBudgetForAddEdit" v-model="showAddEditDialog" fullscreen>
+        <v-card>
+        <v-toolbar color="secondary-darken-1" density="compact" :title="selectedBudgetForAddEdit.isNew ? 'Add Budget' : 'Edit Budget'" >
+            <v-toolbar-items>
+                <v-btn
+                icon="mdi-close"                
+                @click="showAddEditDialog = false"
+                ></v-btn>
+            </v-toolbar-items>
+        </v-toolbar>
             <v-card-text>
                 <budget-add-edit-form v-model:selected-budget="selectedBudgetForAddEdit" :categories="categories"></budget-add-edit-form>
             </v-card-text>
@@ -134,6 +160,7 @@
 </template>
 <script lang="ts" setup>
 import BudgetModel from '@/data/classes/BudgetModel';
+import BudgetSortEnum from '@/data/enumerations/BudgetSortEnum';
 import BudgetTypeEnum from '@/data/enumerations/BudgetType';
 import CategoryType from '@/data/enumerations/CategoryType';
 import BudgetService from '@/data/services/BudgetService';
@@ -152,6 +179,7 @@ const budgets = ref<BudgetModel[]>([]);
 const nonBudgetedCategories = ref<BudgetModel[]>([]);
 const showAddEditDialog = ref(false);
 const selectedBudgetForAddEdit = ref<BudgetModel>(new BudgetModel());
+const selectedSort = ref<number>(BudgetSortEnum.CategoryNameAtoZ.value);
 
 onMounted(async () => {
     try {
@@ -225,12 +253,30 @@ async function getUnbudgetedCategories(): Promise<void> {
     nonBudgetedCategories.value.forEach(async x => await x.setStatistics());
 }
 
-const budgetsSorted = computed(() => budgets.value.sort((a, b) => a.categoryName.localeCompare(b.categoryName)));
+const budgetsSorted = computed(() => budgets.value.sort((a, b) => {
+    switch (selectedSort.value) {
+        case BudgetSortEnum.CategoryNameAtoZ.value:
+            return a.categoryName.localeCompare(b.categoryName);
+        case BudgetSortEnum.CategoryNameZtoA.value:
+            return b.categoryName.localeCompare(a.categoryName);
+        case BudgetSortEnum.AmountSpentMosttoLeast.value:
+            return b.grandTotal - a.grandTotal;
+        case BudgetSortEnum.AmountSpentLeasttoMost.value:
+            return a.grandTotal - b.grandTotal;
+        case BudgetSortEnum.AmountRemainingMosttoLeast.value:
+            return b.budgetRemainingAmount - a.budgetRemainingAmount;
+        case BudgetSortEnum.AmountRemainingLeasttoMost.value:
+            return a.budgetRemainingAmount - b.budgetRemainingAmount;
+        default:
+            return 0;
+    }
+}));
 const grandTotalBudgeted = computed(() => budgets.value.reduce((acc, budget) => acc + budget.budgetAmount, 0));
 const grandTotalSpent = computed(() => 
     budgets.value.reduce((acc, budget) => acc + budget.grandTotal, 0) +
     (includeUnbudgeted.value ? nonBudgetedCategories.value.reduce((acc, budget) => acc + budget.grandTotal, 0) : 0));
-const grandTotalForecasted = computed(() => budgets.value.reduce((acc, budget) => acc + budget.forecasted, 0));
+const grandTotalForecasted = computed(() => budgets.value.reduce((acc, budget) => acc + budget.forecasted, 0) +
+    (includeUnbudgeted.value ? nonBudgetedCategories.value.reduce((acc, budget) => acc + budget.grandTotal, 0) : 0));
 const categories = computed(() => categoriesStore.categories.filter(x => 
     x.type === CategoryType.Expense.value && 
     x.ignore === false &&

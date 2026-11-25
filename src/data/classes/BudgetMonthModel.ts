@@ -15,6 +15,10 @@ export default class BudgetMonthTotal {
         return MonthEnum.getItemByValue(this.statistic.month)?.description ?? "";
     }
 
+    get month(): number {
+        return this.statistic.month;
+    }
+
     get budgetPercent(): number {
         return this.monthTotal / this.budgetAmount;
     }    

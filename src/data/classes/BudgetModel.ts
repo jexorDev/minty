@@ -1,8 +1,8 @@
-import { createDate, DateFormats } from "@/utilities/DateFormattingUtility";
+import { createDate, DateFormats, formatDate } from "@/utilities/DateFormattingUtility";
 import type Budget from "../interfaces/Budget";
 import type CategoryMonthTotal from "../interfaces/Statistics/CategoryMonthTotal";
 import StatisticsService from "../services/StatisticsService";
-import { getCurrentYear } from "@/utilities/DateArithmeticUtility";
+import { adjustDate, getCurrentDate, getCurrentMonth, getCurrentYear } from "@/utilities/DateArithmeticUtility";
 import BudgetService from "../services/BudgetService";
 import BudgetTypeEnum from "../enumerations/BudgetType";
 import BudgetMonthModel from "./BudgetMonthModel";
@@ -10,6 +10,7 @@ import BudgetMonthModel from "./BudgetMonthModel";
 export default class BudgetModel {
 
      budget: Budget;
+     statisticsLastRollingYear: CategoryMonthTotal[] = [];
      statistics: CategoryMonthTotal[] = [];
     _isLoading: boolean = false;
 
@@ -30,7 +31,7 @@ export default class BudgetModel {
     }
 
     get isNew(): boolean {
-        return this.budget.pk === null;
+        return this.pk === null;
     }
 
     get pk(): number | null {
@@ -71,16 +72,36 @@ export default class BudgetModel {
         return this.statistics.reduce((acc, curr) => acc + curr.total, 0);
     }
 
+    get grandTotalRollingPastYear(): number {
+        return this.statisticsLastRollingYear.reduce((acc, curr) => acc + curr.total, 0);
+    }
+
     get totalToDate(): number {
         return this.type === BudgetTypeEnum.Monthly.value && this.currentMonthBudget ? this.currentMonthBudget.monthTotal : this.grandTotal;
     }
 
     get budgetPercent(): number {
-        return (this.type === BudgetTypeEnum.Monthly.value && this.currentMonthBudget ? this.currentMonthBudget.monthTotal : this.grandTotal) / this.amount;
+        return this.grandTotal / this.budgetAmount * 100;
+    }
+
+    get budgetAmount(): number {
+        return this.amount * (this.type === BudgetTypeEnum.Monthly.value ? 12 : 1);
+    }
+
+    get budgetRemainingAmount(): number{
+        return this.budgetAmount - this.grandTotal;
+    }
+
+    get budgetRemainingPerMonthAmount(): number{
+        return Math.max(this.budgetRemainingAmount / this.remainingMonthsInYear, 0);
     }
 
     get monthlyAverage(): number {
-        return this.statistics.length > 0 ? this.grandTotal / this.statistics.length : 0;
+        return this.grandTotal / Math.max(getCurrentMonth(), 1);
+    }
+
+    get monthlyAverageRollingPastYear(): number {
+        return this.grandTotalRollingPastYear / 12;
     }
 
     get budgetMonths(): BudgetMonthModel[] {
@@ -94,6 +115,24 @@ export default class BudgetModel {
     get remaining(): number {
         return this.amount - this.totalToDate;
     }    
+
+    get forecasted(): number {
+        if (this.budget.type === BudgetTypeEnum.Monthly.value ||
+            this.budget.type === BudgetTypeEnum.AnnuallyAccumulated.value
+        ) {
+            return this.grandTotal + (this.remainingMonthsInYear * this.monthlyAverageRollingPastYear);
+        } else if (this.budget.type === BudgetTypeEnum.Yearly.value && this.statistics.length == 0) {
+            return this.grandTotalRollingPastYear;
+        } else if (this.budget.type === BudgetTypeEnum.BiAnnually.value && this.statistics.length  < 2) {
+            return this.statistics.length === 0 ? this.grandTotalRollingPastYear : this.grandTotal + (this.monthlyAverageRollingPastYear * 6);
+        }
+        return this.grandTotal;
+    }
+
+    get remainingMonthsInYear(): number {
+        return 12 - getCurrentMonth();
+    }
+
 
     public async save(): Promise<void> {
         try {
@@ -111,11 +150,12 @@ export default class BudgetModel {
      async setStatistics(): Promise<void> {
         try {
             this._isLoading =  true;
-            this.statistics = await new StatisticsService().withUrlParameters({
-                fromDate: createDate(getCurrentYear(), 0, 1, DateFormats.ISO),
-                toDate: createDate(getCurrentYear(), 11, 31, DateFormats.ISO),
+            this.statisticsLastRollingYear = await new StatisticsService().withUrlParameters({
+                fromDate: formatDate(adjustDate(getCurrentDate(), -12, 'month'), DateFormats.ISO),
+                toDate: formatDate(getCurrentDate(), DateFormats.ISO),
                 categoryId: this.budget.categoryId
             }).getMultiple();
+            this.statistics = this.statisticsLastRollingYear.filter(x => x.year === getCurrentYear());
         } finally {
             this._isLoading = true;
         }

@@ -10,6 +10,7 @@ declare module 'vue' {
     AccountAddEditForm: typeof import('./components/AccountAddEditForm.vue')['default']
     AppFooter: typeof import('./components/AppFooter.vue')['default']
     BudgetAddEditForm: typeof import('./components/BudgetAddEditForm.vue')['default']
+    BudgetDetail: typeof import('./components/BudgetDetail.vue')['default']
     CashflowCard: typeof import('./components/CashflowCard.vue')['default']
     CategoryAddEditForm: typeof import('./components/CategoryAddEditForm.vue')['default']
     Dashboard: typeof import('./components/Dashboard.vue')['default']

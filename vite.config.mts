@@ -71,12 +71,6 @@ export default defineConfig({
   },
   server: {
     port: 3000,  
-     proxy: {
-      '/mintyapi': {
-        target: 'http://192.168.1.241', 
-        changeOrigin: true,
-      },
-    },  
   },
   css: {
     preprocessorOptions: {

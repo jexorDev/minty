@@ -15,7 +15,7 @@
                     </v-autocomplete>
                 </div>
                 <div v-else class="mb-3">
-                    {{ selectedBudget.categoryName }}
+                    {{ selectedBudget.categoryName }} for {{ selectedBudget.year }}
                 </div>
 
                 <div class="text-overline">Budget Type</div>
@@ -31,13 +31,27 @@
                 <div class="text-overline">Amount</div>
                 <v-text-field
                     v-model="selectedBudget.amount"
-                    label="Amount"
+                    :label="BudgetTypeEnum.Monthly.value === selectedBudget.type ? 'Amount per month' : 'Amount per year'"
+                    required 
+                    variant="outlined"             
+                    density="compact"
+                    prefix="$"
+                ></v-text-field>  
+                                
+                <div class="text-overline">Forecasting</div>
+                <v-switch label="Manual Forecasting" v-model="selectedBudget.manualForecast" color="primary" density="compact"></v-switch>  
+
+                <div class="text-overline" v-show="selectedBudget.manualForecast">Manual forecast amount</div>
+                <v-text-field
+                    v-show="selectedBudget.manualForecast"
+                    v-model="selectedBudget.manualForecastAmount"
+                    label="Total amount forecasted for remainder of year"
                     required 
                     variant="outlined"             
                     prefix="$"
-                ></v-text-field>    
+                ></v-text-field>  
                 
-                <div class="d-flex d-inline">
+                <div class="d-flex d-inline" v-if="!selectedBudget.manualForecast">
                     <div class="mr-5">
                         <div class="text-overline">Forcasted / mo</div>
                         <div>
@@ -45,6 +59,7 @@
                         </div>
 
                     </div>
+                    <v-divider vertical thickness="3" class="mr-5"></v-divider>
                     <div class="mr-5">
                         <div class="text-overline">Forcasted total</div>
                         <div>
@@ -55,7 +70,9 @@
                 </div>
             </v-col>
             <v-col cols="8">
-                <v-card color="secondary-darken-1">
+                <v-row>
+                    <v-col>
+                    <v-card color="secondary-darken-1">
                     <v-card-text>
                         <div class="d-flex d-inline">
                             <div class="mr-5">
@@ -105,7 +122,14 @@
                             </div>
                             
                         </div>      
-                        <v-card class="mt-2">
+                       
+                    </v-card-text>
+                </v-card>
+                    </v-col>
+                </v-row>
+                <v-row>
+                    <v-col>
+                         <v-card class="mt-2" variant="outlined">
                             <v-card-text>
                                 <v-row>
                                     <v-col>
@@ -132,16 +156,13 @@
                             
                             </v-card-text>
                         </v-card>   
-                    </v-card-text>
-                </v-card>
-            </v-col>    
-        </v-row>       
-
-        <v-card color="secondary-darken-1">
-            <v-card-text>
-            <v-row>                              
+                    </v-col>
+                </v-row>
+               
+                        <v-row>                              
             <v-col>
-                <div class="text-overline">Current Year</div>
+                <v-card variant="outlined" subtitle="Current Year">
+                    <v-card-text>
                 <div class="d-flex d-inline">
                     
                     <div class="mr-5">
@@ -161,13 +182,17 @@
                     </div>
                     
                     
-                </div>                                
+                </div>  
+                            </v-card-text>
+            </v-card>                              
             </v-col>
         
             
 
             <v-col>
-                <div class="text-overline">Previous rolling 12 months</div>
+                <v-card variant="outlined" subtitle="Previous rolling 12 months">
+                <v-card-text>
+                
                 <div class="d-flex d-inline">
                 <div class="mr-5">
                             <div class="text-overline">Spent</div> 
@@ -184,9 +209,13 @@
                         </div>
                        
                 </div>
+                            </v-card-text>
+            </v-card>
             </v-col>
               <v-col>
-                <div class="text-overline">Last year</div>
+                    <v-card variant="outlined" subtitle="Last Year">
+                    <v-card-text>
+                
                 <div class="d-flex d-inline">
                 <div class="mr-5">
                             <div class="text-overline">Spent</div> 
@@ -203,20 +232,27 @@
                         </div>
                        
                 </div>
+            </v-card-text>
+            </v-card>
             </v-col>
         </v-row>
-            </v-card-text>
-        </v-card>
-      
+            </v-col>    
+        </v-row>       
 
+
+      
+        <v-row>
+            <v-btn text="Transactions" @click="routeToTransactions" color="primary" variant="tonal"></v-btn>
+        </v-row>
     </div>
 </template>
 <script lang="ts" setup>
-import type BudgetModel from '@/data/classes/BudgetModel';
+import BudgetModel from '@/data/classes/BudgetModel';
 import type BudgetMonthModel from '@/data/classes/BudgetMonthModel';
 import BudgetTypeEnum from '@/data/enumerations/BudgetType';
 import type Category from '@/data/interfaces/Category';
 import router from '@/router';
+import { createDate, DateFormats } from '@/utilities/DateFormattingUtility';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 
 const props = defineProps<{
@@ -227,7 +263,16 @@ const selectedBudget = defineModel<BudgetModel>("selectedBudget", {required: tru
 function budgetMonthClicked(budgetMonth: BudgetMonthModel) {
     router.push({path: "/transactions", query: {
         categoryId: selectedBudget.value.categoryId,
+        year: selectedBudget.value.year,
         month: budgetMonth.month
+    }});
+}
+
+function routeToTransactions() {
+    router.push({path: "/transactions", query: {
+        categoryId: selectedBudget.value.categoryId,
+        fromDate: createDate(selectedBudget.value.year, 0, 1, DateFormats.ISO),
+        toDate: createDate(selectedBudget.value.year, 11, 31, DateFormats.ISO),
     }});
 }
 </script>

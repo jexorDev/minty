@@ -1,4 +1,24 @@
 <template>
+     <v-navigation-drawer
+    v-model="showFilterDrawer"    
+    location="right">
+    <v-list>
+      <v-list-item>
+        <template v-slot:append>          
+          <v-icon icon="mdi-close" @click="showFilterDrawer = false"></v-icon>
+        </template>
+      </v-list-item>
+     
+      <v-list-item subtitle="Year">
+        <v-select :items="budgetYearsRange" v-model="selectedBudgetYear"></v-select>
+      </v-list-item>   
+      <v-list-item subtitle="Include Unbudgeted Categories">
+        <v-switch v-model="includeUnbudgeted" color="primary"></v-switch>          
+      </v-list-item>     
+      
+      
+    </v-list>
+  </v-navigation-drawer>
     <v-toolbar color="secondary-darken-1" density="compact">    
         <template v-slot:prepend>
             <v-btn
@@ -9,7 +29,7 @@
             >
             Add
             </v-btn>       
-            <v-switch label="Include Unbudgeted Categories" v-model="includeUnbudgeted" color="primary" class="mt-5"></v-switch>          
+            
             
         </template>     
         <template v-slot:append>
@@ -18,8 +38,7 @@
                         <v-btn v-bind="props" append-icon="mdi-sort">Sort</v-btn>
                     </template>
                     <v-card color="secondary-darken-1">
-                      <v-card-text>
-            
+                      <v-card-text>            
                         <v-radio-group 
                           v-model="selectedSort"
                           density="compact">
@@ -28,6 +47,14 @@
                       </v-card-text>
                     </v-card>
                 </v-menu>
+             <v-btn 
+                text="Filter"
+                @click="showFilterDrawer = !showFilterDrawer" 
+                prepend-icon="mdi-filter-variant" 
+                color="primary" 
+                class="ml-1" 
+                :variant="showFilterDrawer ? `flat` : `outlined`">
+            </v-btn>
         </template>  
     </v-toolbar>
     <v-empty-state v-if="budgets.length === 0"
@@ -40,7 +67,7 @@
                 <th>Category</th>
                 <th>Budgeted</th>
                 <th>Spent</th>
-                <th style="width: 120px;"></th>
+                <th style="width: 120px;">Status</th>
                 <th>Allocated</th>
                 <th>Remaining</th>
                 <th>Remain/mo</th>
@@ -52,38 +79,34 @@
             <tr v-for="budget in budgetsSorted" :key="budget.pk!">
                 
                 <td>{{ budget.categoryName }}</td>
-                <td>
-                    <v-tooltip>
-                        <template v-slot:activator="{ props: activatorProps }">
-                            <v-icon v-if="budget.type === BudgetTypeEnum.Yearly.value" icon="mdi-alpha-a-box" v-bind="activatorProps"></v-icon>
-                            <v-icon v-else-if="budget.type === BudgetTypeEnum.Monthly.value" icon="mdi-alpha-m-box" v-bind="activatorProps"></v-icon>
-                            <v-icon v-else-if="budget.type === BudgetTypeEnum.AnnuallyAccumulated.value" icon="mdi-alpha-c-box" v-bind="activatorProps"></v-icon>
-                            <v-icon v-else icon="mdi-alpha-b-box" v-bind="activatorProps"></v-icon>
-                        
-                        </template>
-                        <div>
-                            {{ BudgetTypeEnum.getItemByValue(budget.type)?.description }}
-                        </div>
-                    </v-tooltip>
-                    {{ formatNumber(budget.amount, NumberFormats.Price) }} {{ budget.type === BudgetTypeEnum.Monthly.value ? "per month" : "per year" }}
-                
+                <td>                  
+                    {{ formatNumber(budget.amount, NumberFormats.Price) }}{{ budget.type === BudgetTypeEnum.Monthly.value ? "/month" : "/year" }}                
                 </td>
                 <td>{{ formatNumber(budget.grandTotal, NumberFormats.Price) }}</td>
                 <td >
                     <v-progress-linear
-                    height="22"
-                    :model-value="budget.budgetPercent"             
-                    :color="budget.budgetPercent > 100 ? 'error' : (budget.budgetPercent > 90 ? 'warning' : 'success')"
-                    rounded="lg">
-                </v-progress-linear>           
+                        height="22"
+                        :model-value="budget.budgetPercent"             
+                        :color="budget.budgetPercent > 100 ? 'error' : (budget.budgetPercent > 90 ? 'warning' : 'success')"
+                        rounded="lg">
+                    </v-progress-linear>           
                 </td>
                 <td>{{ formatNumber(budget.budgetAmount, NumberFormats.Price) }}</td>
                 <td>{{ formatNumber(budget.budgetRemainingAmount, NumberFormats.Price) }}</td>
                 <td>{{ formatNumber(budget.budgetRemainingPerMonthAmount, NumberFormats.Price) }}</td>
                 <td>
-                    <v-chip :color="budget.forecasted > budget.budgetAmount ? 'error' : 'success'">                        
-                    {{ formatNumber(budget.forecasted, NumberFormats.Price) }}
-                </v-chip>
+                      <v-tooltip location="top">
+                        <template v-slot:activator="{ props: activatorProps }">
+                            <v-chip :color="budget.forecasted > budget.budgetAmount ? 'error' : 'success'" v-bind="activatorProps">                        
+                                {{ formatNumber(budget.forecasted, NumberFormats.Price) }}
+                            </v-chip>
+                        </template>
+                        <div>
+                            <div v-if="budget.manualForecast">Manually forecasting {{ formatNumber(budget.manualForecastAmount, NumberFormats.Price) }} spending for remainder of year</div>
+                            <div v-else>Automatically forecasting {{ formatNumber(budget.automatciallyForecasted, NumberFormats.Price) }} spending for remainder of year</div>
+                        </div>
+                    </v-tooltip>
+                  
                 </td>
                 <td>
                     <v-btn
@@ -132,7 +155,6 @@
             </tr>
         </tfoot>
     </v-table>
-
         
 
     <v-dialog v-if="selectedBudgetForAddEdit" v-model="showAddEditDialog" fullscreen>
@@ -167,11 +189,14 @@ import BudgetService from '@/data/services/BudgetService';
 import { useCategoryStore } from '@/stores/CategoryStore';
 import { useConfirmationStore } from '@/stores/ConfirmationStore';
 import { useSnackbarStore } from '@/stores/SnackbarStore';
+import { useUserSettingsStore } from '@/stores/UserSettingsStore';
+import { getCurrentYear, getYear } from '@/utilities/DateArithmeticUtility';
 import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 
 const confirmationStore = useConfirmationStore();
 const snackbarStore = useSnackbarStore();
 const categoriesStore = useCategoryStore();
+const userSettingsStore = useUserSettingsStore();
 
 const isLoading = ref(false);
 const includeUnbudgeted = ref(false);
@@ -180,18 +205,28 @@ const nonBudgetedCategories = ref<BudgetModel[]>([]);
 const showAddEditDialog = ref(false);
 const selectedBudgetForAddEdit = ref<BudgetModel>(new BudgetModel());
 const selectedSort = ref<number>(BudgetSortEnum.CategoryNameAtoZ.value);
+const selectedBudgetYear = ref(getCurrentYear());
+const showFilterDrawer = ref(false);
 
 onMounted(async () => {
+    await getData();
+})
+
+async function getData(): Promise<void> {
     try {
+        includeUnbudgeted.value = false;
+
         isLoading.value = true;
-        budgets.value = await new BudgetService().getMultiple().then(data => data.map(x => new BudgetModel(x)));
+        budgets.value = await new BudgetService().withUrlParameters({
+            year: selectedBudgetYear.value
+        }).getMultiple().then(data => data.map(x => new BudgetModel(x)));
         budgets.value.forEach(async x => await x.setStatistics());
-        console.log(budgets.value)
        
     } finally {
         isLoading.value = false;
     }
-})
+}
+
 
 function setSelected(budget: BudgetModel) {
     selectedBudgetForAddEdit.value = budget;
@@ -200,6 +235,7 @@ function setSelected(budget: BudgetModel) {
 
 function addNewBudget() {
     selectedBudgetForAddEdit.value = new BudgetModel();
+    selectedBudgetForAddEdit.value.year = selectedBudgetYear.value;
     showAddEditDialog.value = true;
 }
 
@@ -236,20 +272,23 @@ async function deleteBudget(budget: BudgetModel) : Promise<void> {
 
 async function getUnbudgetedCategories(): Promise<void> {
     nonBudgetedCategories.value = categoriesStore.categories.filter(x => 
-                x.type === CategoryType.Expense.value && 
-                x.ignore === false &&
-                budgets.value.find(y => y.categoryId === x.pk) == null).map(y => {
-                    const budget = new BudgetModel(
-                        {
-                            categoryId: y.pk!,
-                            categoryName: y.name,
-                            type: BudgetTypeEnum.Monthly.value,
-                            amount: 0
-                        }
-                    );
-                    
-                    return budget;
-                });
+        x.type === CategoryType.Expense.value && 
+        x.ignore === false &&
+        budgets.value.find(y => y.categoryId === x.pk) == null).map(y => {
+            const budget = new BudgetModel(
+                {
+                    categoryId: y.pk!,
+                    categoryName: y.name,
+                    type: BudgetTypeEnum.Monthly.value,
+                    amount: 0,
+                    year: selectedBudgetYear.value,
+                    manualForecast: false,
+                    manualForecastAmount: 0
+                }
+            );
+            
+            return budget;
+        });
     nonBudgetedCategories.value.forEach(async x => await x.setStatistics());
 }
 
@@ -281,7 +320,22 @@ const categories = computed(() => categoriesStore.categories.filter(x =>
     x.type === CategoryType.Expense.value && 
     x.ignore === false &&
     budgets.value.find(y => y.categoryId === x.pk) == null));
-    
+
+const budgetYearsRange = computed<number[]>(() => {
+    const minYear = getYear(userSettingsStore.userSettings.minTransactionDate);
+    const range = [];
+
+    for (var i = getCurrentYear(); i > minYear; i--) {
+        range.push(i);
+    }
+
+    return range;
+})
+  
+watch(selectedBudgetYear, async () => {
+    await getData();
+})
+
 watch(includeUnbudgeted, async (newValue) => {
     if (newValue) {
         await getUnbudgetedCategories();

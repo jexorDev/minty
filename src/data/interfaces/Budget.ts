@@ -4,4 +4,7 @@ export default interface Budget {
     categoryName: string;
     type: number;
     amount: number;
+    year: number;
+    manualForecast: boolean;
+    manualForecastAmount: number;
 }

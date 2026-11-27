@@ -49,6 +49,13 @@ export default class BudgetModel {
         }
     }
 
+    get year(): number {
+        return this.budget.year;
+    }
+    set year(value) {
+        this.budget.year = value;
+    }
+
     get categoryName(): string {
         return this.budget.categoryName;
     }
@@ -65,6 +72,20 @@ export default class BudgetModel {
     }
     set amount(value) {
         this.budget.amount = value;
+    }
+
+    get manualForecast(): boolean {
+        return this.budget.manualForecast;
+    }
+    set manualForecast(value) {
+        this.budget.manualForecast = value;
+    }
+
+    get manualForecastAmount(): number {
+        return this.budget.manualForecastAmount;
+    }
+    set manualForecastAmount(value) {
+        this.budget.manualForecastAmount = value;
     }
 
     get grandTotal(): number {
@@ -124,16 +145,21 @@ export default class BudgetModel {
     }    
 
     get forecasted(): number {
-        if (this.budget.type === BudgetTypeEnum.Monthly.value ||
-            this.budget.type === BudgetTypeEnum.AnnuallyAccumulated.value
-        ) {
-            return this.grandTotal + (this.remainingMonthsInYear * this.monthlyAverageRollingPastYear);
-        } else if (this.budget.type === BudgetTypeEnum.Yearly.value && this.statistics.length == 0) {
-            return this.grandTotalRollingPastYear;
-        } else if (this.budget.type === BudgetTypeEnum.BiAnnually.value && this.statistics.length  < 2) {
-            return this.statistics.length === 0 ? this.grandTotalRollingPastYear : this.grandTotal + (this.monthlyAverageRollingPastYear * 6);
+        if (this.manualForecast) {
+            return this.grandTotal + this.manualForecastAmount;
+        } else {
+            return this.grandTotal + this.automatciallyForecasted;
         }
-        return this.grandTotal;
+    }
+
+    get automatciallyForecasted(): number {
+        if (this.budget.type === BudgetTypeEnum.Monthly.value ||
+                this.statistics.length > 0
+            ) {
+                return this.remainingMonthsInYear * this.monthlyAverageRollingPastYear;
+            } else {
+                return this.grandTotalRollingPastYear;
+            }    
     }
 
     get forecastedPerMonth(): number {

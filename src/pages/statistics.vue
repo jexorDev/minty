@@ -168,7 +168,7 @@ import StatisticsService from '@/data/services/StatisticsService';
 import { useCategoryStore } from '@/stores/CategoryStore';
 import { useUserSettingsStore } from '@/stores/UserSettingsStore';
 import { getCurrentMonth, getCurrentYear, getDaysInMonth } from '@/utilities/DateArithmeticUtility';
-import { formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
+import { castToNumber, formatNumber, NumberFormats } from '@/utilities/NumberFormattingUtility';
 import { useCategoryAggregator, type AggregatedCategory, type CategoryAggregatorFilter } from '@/composables/data/CategoryAggregator';
 import StatisticsPageViewTypeEnum from '@/data/enumerations/StatisticsPageViewType';
 import YearCollectionModel from '@/data/classes/YearCollectionModel';
@@ -221,6 +221,14 @@ const selectedSpendingChartType = ref(ChartTypeEnum.Bar.value);
 const selectedCategoryChartType = ref(ChartTypeEnum.Donut.value);
 
 onMounted(async () => {   
+    if (router.currentRoute.value.query.categoryId) {
+      filterCategoryId.value = castToNumber(router.currentRoute.value.query.categoryId.toString());
+    }
+
+    if (router.currentRoute.value.query.year) {
+      selectedYear.value = castToNumber(router.currentRoute.value.query.year.toString());
+    }
+
     await getData();
 });
 

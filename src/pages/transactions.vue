@@ -242,6 +242,11 @@
       <v-card>        
         <DataTable :data="spendingByCategoryTableData" :headers="[]" density="compact"></DataTable>
       </v-card>
+      <v-card color="secondary-darken-1">
+        <v-card-text>
+          <div>Expenses: {{ formatNumber(expensesTotal, NumberFormats.Price) }} | Income: {{ formatNumber(incomeTotal, NumberFormats.Price) }}</div>
+        </v-card-text>
+        </v-card>
     </v-col>
   </v-row>
   
@@ -275,6 +280,7 @@ import { useMerchantStore } from '@/stores/MerchantStore';
 import { useAccountStore } from '@/stores/AccountStore';
 import TransactionDateFilterTypeEnum from '@/data/enumerations/TransactionDateFilterType';
 import type { VVirtualScroll } from 'vuetify/components';
+import CategoryTypeEnum from '@/data/enumerations/CategoryType';
 
   const selectedTransaction = ref<TransactionSearch | undefined>(undefined);
   const transactions = ref<TransactionSearch[]>([]);
@@ -487,6 +493,9 @@ async function searchUpdate(searchString: string): Promise<void> {
   }, 1000);       
 }
 const resultCount = computed(() => quickSearchTransactions.value.length);
+
+const expensesTotal = computed(() => filteredTransactions.value.filter(x => x.categoryType === CategoryTypeEnum.Expense.value).reduce((acc, transaction) => acc + transaction.amount, 0));
+const incomeTotal = computed(() => filteredTransactions.value.filter(x => x.categoryType === CategoryTypeEnum.Income.value).reduce((acc, transaction) => acc + (transaction.amount * -1), 0));
 
 const spendingByCategoryTableData = computed(() => {
   return aggregatedCategories.value.map(x => {return {name: x.name, total: formatNumber(x.total, NumberFormats.Price)}});

@@ -1,28 +1,29 @@
 <template>
-    <v-card color="secondary-darken-1">
+    <v-card color="secondary-darken-1" subtitle="Spending Comparison">
         <v-card-text>
-            <div class="text-caption">
-                Spending this month vs last month
-            </div>
-            <div v-if="thisMonthVsLastMonthSpendingDifference < 0" class="text-error text-h6">      
-                <v-icon icon="mdi-menu-up"></v-icon>          
+
+            <div v-if="thisMonthVsLastMonthSpendingDifference < 0" class="text-h6">
+                <v-icon icon="mdi-menu-up" color="error"></v-icon>
                 {{ formatNumber(Math.abs(thisMonthVsLastMonthSpendingDifference)) }} more
             </div>
-            <div v-else class="text-success text-h6">
-                <v-icon color="success" size="x-large" icon="mdi-menu-down"></v-icon>          
+            <div v-else class="text-h6">
+                <v-icon color="success" size="x-large" icon="mdi-menu-down"></v-icon>
                 {{ formatNumber(Math.abs(thisMonthVsLastMonthSpendingDifference)) }} less
             </div>
-
-            <div class="text-caption">
-                Spending this month current vs last year
+            <div class="text-caption mb-2">
+                this month vs last month
             </div>
-            <div v-if="thisMonthVsThisMonthLastYearSpendingDifference < 0" class="text-error text-h6">      
-                <v-icon icon="mdi-menu-up"></v-icon>          
+
+            <div v-if="thisMonthVsThisMonthLastYearSpendingDifference < 0" class="text-h6">
+                <v-icon icon="mdi-menu-up" color="error"></v-icon>
                 {{ formatNumber(Math.abs(thisMonthVsThisMonthLastYearSpendingDifference)) }} more
             </div>
-            <div v-else class="text-success text-h6">
-                <v-icon color="success" size="x-large" icon="mdi-menu-down"></v-icon>          
-                {{ formatNumber(Math.abs(thisMonthVsThisMonthLastYearSpendingDifference)) }} less                
+            <div v-else class="text-h6">
+                <v-icon color="success" size="x-large" icon="mdi-menu-down"></v-icon>
+                {{ formatNumber(Math.abs(thisMonthVsThisMonthLastYearSpendingDifference)) }} less
+            </div>
+            <div class="text-caption">
+                this month this year vs last
             </div>
         </v-card-text>
     </v-card>
@@ -37,7 +38,7 @@ import { formatNumber } from '@/utilities/NumberFormattingUtility';
 
 const userSettings = useUserSettingsStore();
 
-const props = defineProps<{ categoryMonthTotals: CategoryMonthTotal[]}>();
+const props = defineProps<{ categoryMonthTotals: CategoryMonthTotal[] }>();
 
 const maxMonth = computed(() => getMonth(userSettings.userSettings.maxTransactionDate));
 
